@@ -147,8 +147,8 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  //osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 1024);
-  //defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 1024);
+  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -160,7 +160,7 @@ int main(void)
  
 
   /* Start scheduler */
-  //osKernelStart();
+  osKernelStart();
   
   /* We should never get here as control is now taken by the scheduler */
 
@@ -170,7 +170,7 @@ int main(void)
   {
 	  HAL_Delay(500);
 	  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-	  uint8_t data[60];
+	  char data[60];
 	  sprintf(data, "Problem z FreeRTOS - jestem w petli while w main()\n\r");
 	  LOGGER_Log(data);
 
