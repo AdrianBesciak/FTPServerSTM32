@@ -57,6 +57,12 @@
 /* USER CODE BEGIN Includes */
 
 #include "logger.h"
+#include "usbh_platform.h"
+
+//lab2_3
+//#include "dbgu.h"
+//#include "term_io.h"
+//#include "ansi.h"
 
 
 /* USER CODE END Includes */
@@ -71,6 +77,8 @@ osThreadId defaultTaskHandle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+
+char* logdata;
 
 /* USER CODE END PV */
 
@@ -90,6 +98,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 
 /* USER CODE BEGIN 0 */
 
+//lab2_3
+extern ApplicationTypeDef Appli_state;
+
+
+
+FATFS USBDISKFatFs;           /* File system object for USB disk logical drive */
+FIL MyFile;                   /* File object */
+char USBDISKPath[4];          /* USB Host logical drive path */
+USBH_HandleTypeDef hUSB_Host; /* USB Host handle */
+
 /* USER CODE END 0 */
 
 /**
@@ -100,6 +118,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+
+  logdata = (char*)malloc(50 * sizeof(char));
+
 
   /* USER CODE END 1 */
 
@@ -126,9 +147,9 @@ int main(void)
   /* USER CODE BEGIN 2 */
   LOGGER_Init(&huart3);
   HAL_TIM_Base_Start_IT(&htim10);
-  LOGGER_Log("Zyje");
-  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+  LOGGER_Log("Zyje\n");
+  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 
   /* USER CODE END 2 */
@@ -368,10 +389,66 @@ void StartDefaultTask(void const * argument)
   MX_LWIP_Init();
 
   /* USER CODE BEGIN 5 */
+  //lab2_3
+
+  MX_DriverVbusFS(0); //wlacza zasilanie urzadzenia USB
+  LOGGER_Log("waiting for USB device...");
+
+  do{
+	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+	  vTaskDelay(100);
+	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+   LOGGER_Log(".");
+   vTaskDelay(100);
+   }while(Appli_state != APPLICATION_READY);
+   LOGGER_Log("\nUSB device ready!\n");
+   HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+
+
+   vTaskDelay(100);
+   LOGGER_Log("Write test\n");
+//   osDelay(2000);
+
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+
+    osDelay(100);
+
+    FRESULT res;
+	UINT bw;
+	FIL file;
+	FATFS *fs;     /* Ponter to the filesystem object */
+
+	fs = malloc(sizeof (FATFS));           /* Get work area for the volume */
+	f_mount(fs, "", 0);                    /* Mount the default drive */
+
+	const char* text = "Linijka tekstu!\n";
+	LOGGER_Log("f_open...\n");
+	osDelay(200);
+	res = f_open(&file,"0:/test.txt",FA_WRITE|FA_OPEN_APPEND);
+	// Allocates storage
+	sprintf(logdata, "res=%d\n",res);
+	LOGGER_Log(logdata);
+
+	osDelay(100);
+	if(res == FR_NOT_ENABLED){
+		LOGGER_Log("FR_NOT_ENABLED\n");
+	}
+
+	osDelay(200);
+	if(res) break;
+	LOGGER_Log("f_write... ");
+	res = f_write(&file,text,strlen(text),&bw);
+	sprintf(logdata, "res=%d, bw=%d\n",res,bw);
+	LOGGER_Log(logdata);
+	f_close(&file);
+
+	HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+    osDelay(100);
+
   }
   /* USER CODE END 5 */ 
 }
@@ -390,8 +467,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM10) {
 	static uint16_t cnt = 0;
 	char data[50];
-	sprintf(data, "Zyje: %d.\n\r", cnt);
-	LOGGER_Log(data);
+	sprintf(data, "Log: %d.\n\r", cnt);
+//	LOGGER_Log(data);
 	cnt++;
   }
 
