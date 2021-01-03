@@ -395,58 +395,100 @@ void StartDefaultTask(void const * argument)
   LOGGER_Log("waiting for USB device...");
 
   do{
-	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	  vTaskDelay(100);
-	  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-   LOGGER_Log(".");
-   vTaskDelay(100);
-   }while(Appli_state != APPLICATION_READY);
-   LOGGER_Log("\nUSB device ready!\n");
-   HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-
-
-   vTaskDelay(100);
-   LOGGER_Log("Write test\n");
-//   osDelay(2000);
-
-  /* Infinite loop */
-  for(;;)
-  {
 	  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+	  vTaskDelay(100);
+	  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+	  LOGGER_Log(".");
+	  vTaskDelay(100);
+   }while(Appli_state != APPLICATION_READY);
 
-    osDelay(100);
+   LOGGER_Log("\nUSB device ready!\n");
+   HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 
-    FRESULT res;
-	UINT bw;
+
+   FRESULT res;
 	FIL file;
 	FATFS *fs;     /* Ponter to the filesystem object */
 
 	fs = malloc(sizeof (FATFS));           /* Get work area for the volume */
 	f_mount(fs, "", 0);                    /* Mount the default drive */
 
-	const char* text = "Linijka tekstu!\n";
-	LOGGER_Log("f_open...\n");
-	osDelay(200);
-	res = f_open(&file,"0:/test.txt",FA_WRITE|FA_OPEN_APPEND);
-	// Allocates storage
-	sprintf(logdata, "res=%d\n",res);
-	LOGGER_Log(logdata);
+   int task = 1;
 
-	osDelay(100);
-	if(res == FR_NOT_ENABLED){
-		LOGGER_Log("FR_NOT_ENABLED\n");
-	}
+   if(task == 0){
+	   UINT bw;
 
-	osDelay(200);
-	if(res) break;
-	LOGGER_Log("f_write... ");
-	res = f_write(&file,text,strlen(text),&bw);
-	sprintf(logdata, "res=%d, bw=%d\n",res,bw);
-	LOGGER_Log(logdata);
-	f_close(&file);
+	   vTaskDelay(10);
+	  LOGGER_Log("Write test\n");
 
-	HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+		const char* text = "Linijka tekstu!\n";
+		LOGGER_Log("f_open...\n");
+		osDelay(10);
+		res = f_open(&file,"0:/test.txt",FA_WRITE|FA_OPEN_APPEND);
+		// Allocates storage
+		sprintf(logdata, "res=%d\n",res);
+		LOGGER_Log(logdata);
+
+		osDelay(10);
+		if(res == FR_NOT_ENABLED){
+			LOGGER_Log("FR_NOT_ENABLED\n");
+		}
+
+		osDelay(10);
+		if(!res){
+			LOGGER_Log("f_write...\n");
+		res = f_write(&file,text,strlen(text),&bw);
+		sprintf(logdata, "res=%d, bw=%d\n",res,bw);
+		LOGGER_Log(logdata);
+		f_close(&file);
+		}
+		else{
+			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+		}
+   }
+
+   if(task == 1){
+	   UINT br;
+
+	   vTaskDelay(10);
+	   LOGGER_Log("Read test\n");
+
+
+	   int btr = 50;
+		char* text = (char)malloc(btr * sizeof(char));
+		LOGGER_Log("f_open...\n");
+		osDelay(10);
+		res = f_open(&file,"0:/test.txt",FA_READ);
+		// Allocates storage
+		sprintf(logdata, "res=%d\n",res);
+		LOGGER_Log(logdata);
+
+		osDelay(10);
+		if(res == FR_NOT_ENABLED){
+			LOGGER_Log("FR_NOT_ENABLED\n");
+		}
+
+		osDelay(10);
+		if(!res){
+			LOGGER_Log("f_write...\n");
+		res = f_read(&file,text,btr,&br);
+		sprintf(logdata, "br=%d, text=%s\n",br, text);
+		LOGGER_Log(logdata);
+		f_close(&file);
+		}
+		else{
+			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+		}
+   }
+
+
+
+
+  /* Infinite loop */
+  for(;;)
+  {
     osDelay(100);
 
   }
