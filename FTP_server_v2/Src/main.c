@@ -75,6 +75,8 @@ UART_HandleTypeDef huart3;
 
 osThreadId defaultTaskHandle;
 
+uint32_t last_tick;
+
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
@@ -92,6 +94,7 @@ void StartDefaultTask(void const * argument);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
 
 
 /* USER CODE END PFP */
@@ -120,7 +123,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
 
   logdata = (char*)malloc(50 * sizeof(char));
-
+  last_tick = HAL_GetTick();
 
   /* USER CODE END 1 */
 
@@ -373,6 +376,17 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+	uint32_t cur_tick = HAL_GetTick();
+	if(cur_tick - last_tick > 500){
+		last_tick = cur_tick;
+		if(GPIO_Pin == GPIO_PIN_13){
+			LOGGER_Log("Pressed button\n");
+		}
+	}
+
+}
 
 /* USER CODE END 4 */
 
