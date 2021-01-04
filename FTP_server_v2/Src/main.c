@@ -80,7 +80,11 @@ uint32_t last_tick;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
+//Usb status
+extern ApplicationTypeDef Appli_state;
+
 char* logdata;
+uint8_t Received;
 
 /* USER CODE END PV */
 
@@ -95,21 +99,16 @@ void StartDefaultTask(void const * argument);
 /* Private function prototypes -----------------------------------------------*/
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin);
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
 
-//lab2_3
-extern ApplicationTypeDef Appli_state;
-
-
-
-FATFS USBDISKFatFs;           /* File system object for USB disk logical drive */
-FIL MyFile;                   /* File object */
-char USBDISKPath[4];          /* USB Host logical drive path */
-USBH_HandleTypeDef hUSB_Host; /* USB Host handle */
+//FATFS USBDISKFatFs;           /* File system object for USB disk logical drive */
+//FIL MyFile;                   /* File object */
+//char USBDISKPath[4];          /* USB Host logical drive path */
+//USBH_HandleTypeDef hUSB_Host; /* USB Host handle */
 
 /* USER CODE END 0 */
 
@@ -154,6 +153,9 @@ int main(void)
   HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+
+  HAL_UART_Receive_IT(&huart3, &Received, 1);
+
 
   /* USER CODE END 2 */
 
@@ -382,10 +384,35 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	if(cur_tick - last_tick > 500){
 		last_tick = cur_tick;
 		if(GPIO_Pin == GPIO_PIN_13){
-			LOGGER_Log("Pressed button\n");
+			LOGGER_Log("Pressed button\n\r");
 		}
 	}
 
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+
+	uint8_t Data[50]; // Tablica przechowujaca wysylana wiadomosc.
+	uint16_t size = 0; // Rozmiar wysylanej wiadomosci
+
+	// Odebrany znak zostaje przekonwertowany na liczbe calkowita i sprawdzony
+	// instrukcja warunkowa
+	switch (atoi(&Received)) {
+		case 0: // Jezeli odebrany zostanie znak 0
+			size = sprintf(Data, "STOP\n\r");
+			break;
+
+		case 1: // Jezeli odebrany zostanie znak 1
+			size = sprintf(Data, "START\n\r");
+			break;
+
+		default: // Jezeli odebrano nieobslugiwany znak
+			size = sprintf(Data, "Odebrano nieznany znak: %c\n\r", Received);
+			break;
+	}
+
+	HAL_UART_Transmit_IT(&huart3, Data, size); // Rozpoczecie nadawania danych z wykorzystaniem przerwan
+	HAL_UART_Receive_IT(&huart3, &Received, 1); // Ponowne włączenie nasłuchiwania
 }
 
 /* USER CODE END 4 */
@@ -406,7 +433,9 @@ void StartDefaultTask(void const * argument)
   //lab2_3
 
   MX_DriverVbusFS(0); //wlacza zasilanie urzadzenia USB
-  LOGGER_Log("waiting for USB device...");
+//  LOGGER_Log("waiting for USB device...\n\r");
+  const char* msg = "waiting for USB device...\n\r";
+  HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
 
   do{
 	  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
