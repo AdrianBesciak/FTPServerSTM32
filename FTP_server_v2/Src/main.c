@@ -56,7 +56,6 @@
 
 /* USER CODE BEGIN Includes */
 
-#include "logger.h"
 #include "usbh_platform.h"
 
 //lab2_3
@@ -147,15 +146,17 @@ int main(void)
   MX_USART3_UART_Init();
   MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
-  LOGGER_Init(&huart3);
-  HAL_TIM_Base_Start_IT(&htim10);
-  LOGGER_Log("Zyje\n");
+
+  uint8_t data[50];
+  uint16_t size = sprintf(data, "Zainicjowane peryferia\n\r");
+  HAL_UART_Transmit_IT(&huart3, data, size);
+
   HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 
   HAL_UART_Receive_IT(&huart3, &Received, 1);
-
+  //HAL_TIM_Base_Start_IT(&htim10);
 
   /* USER CODE END 2 */
 
@@ -194,11 +195,12 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_Delay(500);
+	  HAL_Delay(1000);
 	  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-	  char data[60];
-	  sprintf(data, "Problem z FreeRTOS - jestem w petli while w main()\n\r");
-	  LOGGER_Log(data);
+	  uint8_t data[50];
+	  static uint8_t cnt = 0;
+	  uint16_t size = sprintf(data, "main while(1) - iteracja %i\n\r", ++cnt);
+	  HAL_UART_Transmit_IT(&huart3, data, size);
 
   /* USER CODE END WHILE */
 
@@ -384,7 +386,8 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	if(cur_tick - last_tick > 500){
 		last_tick = cur_tick;
 		if(GPIO_Pin == GPIO_PIN_13){
-			LOGGER_Log("Pressed button\n\r");
+			const char * message = "Pressed button\n\r";
+			HAL_UART_Transmit_IT(&huart3, message, strlen(message));
 		}
 	}
 
@@ -433,7 +436,6 @@ void StartDefaultTask(void const * argument)
   //lab2_3
 
   MX_DriverVbusFS(0); //wlacza zasilanie urzadzenia USB
-//  LOGGER_Log("waiting for USB device...\n\r");
   const char* msg = "waiting for USB device...\n\r";
   HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
 
@@ -441,11 +443,13 @@ void StartDefaultTask(void const * argument)
 	  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
 	  vTaskDelay(100);
 	  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
-	  LOGGER_Log(".");
+	  const char * dot = ".";
+	  HAL_UART_Transmit_IT(&huart3, dot, strlen(dot));
 	  vTaskDelay(100);
    }while(Appli_state != APPLICATION_READY);
 
-   LOGGER_Log("\nUSB device ready!\n");
+   const char * message = "\n\rUSB device ready!\n\r";
+   HAL_UART_Transmit_IT(&huart3, message, strlen(message));
    HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 
 
@@ -458,32 +462,36 @@ void StartDefaultTask(void const * argument)
 
    int task = 1;
 
-   if(task == 0){
+   if(task == 0) {
 	   UINT bw;
 
 	   vTaskDelay(10);
-	  LOGGER_Log("Write test\n");
+	   const char * msg = "Write test\n\r";
+	   HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
 
 		const char* text = "Linijka tekstu!\n";
-		LOGGER_Log("f_open...\n");
+		const char * msg1 = "f_open...\n\r";
+		HAL_UART_Transmit_IT(&huart3, msg1, strlen(msg1));
 		osDelay(10);
 		res = f_open(&file,"0:/test.txt",FA_WRITE|FA_OPEN_APPEND);
 		// Allocates storage
 		sprintf(logdata, "res=%d\n",res);
-		LOGGER_Log(logdata);
+		HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
 
 		osDelay(10);
 		if(res == FR_NOT_ENABLED){
-			LOGGER_Log("FR_NOT_ENABLED\n");
+			const char * msg = "FR_NOT_ENABLED\n\r";
+			HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
 		}
 
 		osDelay(10);
 		if(!res){
-			LOGGER_Log("f_write...\n");
-		res = f_write(&file,text,strlen(text),&bw);
-		sprintf(logdata, "res=%d, bw=%d\n",res,bw);
-		LOGGER_Log(logdata);
-		f_close(&file);
+			const char * msg = "f_write...\n\r";
+			HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
+			res = f_write(&file,text,strlen(text),&bw);
+			sprintf(logdata, "res=%d, bw=%d\n\r",res,bw);
+			HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
+			f_close(&file);
 		}
 		else{
 			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
@@ -495,30 +503,34 @@ void StartDefaultTask(void const * argument)
 	   UINT br;
 
 	   vTaskDelay(10);
-	   LOGGER_Log("Read test\n");
+	   const char * msg = "Read test\n\r";
+	   HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
 
 
 	   int btr = 50;
 		char* text = (char)malloc(btr * sizeof(char));
-		LOGGER_Log("f_open...\n");
+		const char * msg5 = "f_open...\n\r";
+		HAL_UART_Transmit_IT(&huart3, msg5, strlen(msg5));
 		osDelay(10);
 		res = f_open(&file,"0:/test.txt",FA_READ);
 		// Allocates storage
 		sprintf(logdata, "res=%d\n",res);
-		LOGGER_Log(logdata);
+		HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
 
 		osDelay(10);
 		if(res == FR_NOT_ENABLED){
-			LOGGER_Log("FR_NOT_ENABLED\n");
+			const char * msg = "FR_NOT_ENABLED\n\r";
+			HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
 		}
 
 		osDelay(10);
 		if(!res){
-			LOGGER_Log("f_write...\n");
-		res = f_read(&file,text,btr,&br);
-		sprintf(logdata, "br=%d, text=%s\n",br, text);
-		LOGGER_Log(logdata);
-		f_close(&file);
+			const char * msg = "f_write...\n\r";
+			HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
+			res = f_read(&file,text,btr,&br);
+			sprintf(logdata, "br=%d, text=%s\n",br, text);
+			HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
+			f_close(&file);
 		}
 		else{
 			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
@@ -553,7 +565,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	static uint16_t cnt = 0;
 	char data[50];
 	sprintf(data, "Log: %d.\n\r", cnt);
-//	LOGGER_Log(data);
+	HAL_UART_Transmit_IT(&huart3, data, strlen(data));
 	cnt++;
   }
 
