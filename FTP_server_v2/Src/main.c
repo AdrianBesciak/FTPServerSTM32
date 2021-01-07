@@ -56,7 +56,10 @@
 
 /* USER CODE BEGIN Includes */
 
+#include "lwip/api.h"
 #include "usbh_platform.h"
+
+#include "ftp_server.h"
 
 //lab2_3
 //#include "dbgu.h"
@@ -103,6 +106,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+
+extern struct netif gnetif;
 
 //FATFS USBDISKFatFs;           /* File system object for USB disk logical drive */
 //FIL MyFile;                   /* File object */
@@ -433,8 +438,29 @@ void StartDefaultTask(void const * argument)
   MX_LWIP_Init();
 
   /* USER CODE BEGIN 5 */
-  //lab2_3
 
+  sprintf(logdata, "Obtaining address with DHCP...\n\r");
+  HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
+  struct dhcp *dhcp = netif_dhcp_data(&gnetif);
+  do
+  {
+	  sprintf(logdata, "dhcp->state = %02X\n\r",dhcp->state);
+	  HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
+	  vTaskDelay(250);
+  }while(dhcp->state != 0x0A);
+  vTaskDelay(200);
+  sprintf(logdata, "DHCP bound with address %s\n\r", ipaddr_ntoa(&(gnetif.ip_addr)));
+  HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
+
+
+  osThreadDef(ftp_thread, ftp_server_netconn_thread, osPriorityNormal, 1, 1024);
+  ftp_init_arguments ftp_args;
+  ftp_args.huart = &huart3;
+  osThreadCreate(osThread(ftp_thread), &ftp_args);
+
+
+  //lab2_3
+/*
   MX_DriverVbusFS(0); //wlacza zasilanie urzadzenia USB
   const char* msg = "waiting for USB device...\n\r";
   HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
@@ -457,10 +483,10 @@ void StartDefaultTask(void const * argument)
 	FIL file;
 	FATFS *fs;     /* Ponter to the filesystem object */
 
-	fs = malloc(sizeof (FATFS));           /* Get work area for the volume */
-	f_mount(fs, "", 0);                    /* Mount the default drive */
+/*	fs = malloc(sizeof (FATFS));           /* Get work area for the volume */
+/*	f_mount(fs, "", 0);                    /* Mount the default drive */
 
-   int task = 1;
+/*   int task = 1;
 
    if(task == 0) {
 	   UINT bw;
@@ -536,7 +562,7 @@ void StartDefaultTask(void const * argument)
 			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
 		}
-   }
+   }*/
 
 
 
