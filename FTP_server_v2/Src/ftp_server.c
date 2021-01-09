@@ -18,6 +18,20 @@
 
 UART_HandleTypeDef * huart;
 
+/* define ftp replies */
+const char ftp_message_init_connection[] = "220 (vsFTPd 3.0.3)\r\n";
+const char ftp_message_ask_for_login_and_password[] = "530 Please login with USER and PASS.\r\n";
+const char ftp_message_ask_for_password[] = "331 Please specify the password.\r\n";
+const char ftp_message_login_successful[] = "230 Login successful.\r\n";
+const char ftp_message_system_type[] = "215 NAME stm.\r\n";
+const char ftp_message_not_recognized_operation[] = "500\r\n";
+const char ftp_message_current_root_directory[] = "257 \"/\" is the current dierctory\r\n";
+const char ftp_message_binary_mode[] = "200 Switching to Binary mode.\r\n";
+const char ftp_message_passive_mode[] = "227 Entering Passive Mode (172,16,25,125,0,23).\r\n";
+const char ftp_message_open_data_connection[] = "150 Here comes the directory listing.\r\n";
+const char ftp_message_closing_successful_data_connection[] = "226 Directory send OK.\r\n";
+
+
 //based on http server example from lab
 static void ftp_server_serve(struct netconn * conn) {
 	struct netbuf * inbuf;
@@ -28,9 +42,7 @@ static void ftp_server_serve(struct netconn * conn) {
 	char logbuf[50];
 
 	/* initial response */
-	char hello_response[20];
-	sprintf(hello_response, "220 (vsFTPd 3.0.3)\r\n");
-	netconn_write(conn, hello_response, sizeof(hello_response), NETCONN_NOCOPY);
+	netconn_write(conn, ftp_message_init_connection, sizeof(ftp_message_init_connection), NETCONN_NOCOPY);
 
 	recv_err = netconn_recv(conn, &inbuf);
 	sprintf(logbuf, "Recv_err: %i\n\r", recv_err);
@@ -46,9 +58,7 @@ static void ftp_server_serve(struct netconn * conn) {
 	}
 
 	/* user credentials request */
-	char response2[38];
-	sprintf(response2, "530 Please login with USER and PASS.\r\n");
-	netconn_write(conn, response2, sizeof(response2), NETCONN_NOCOPY);
+	netconn_write(conn, ftp_message_ask_for_login_and_password, sizeof(ftp_message_ask_for_login_and_password), NETCONN_NOCOPY);
 
 	//vTaskDelay(50);
 	recv_err = netconn_recv(conn, &inbuf);
@@ -67,8 +77,7 @@ static void ftp_server_serve(struct netconn * conn) {
 	}
 
 	/* second user credentials request the same as previously */
-	//sprintf(response2, "530 Please login with USER and PASS.\r\n");
-	netconn_write(conn, response2, sizeof(response2), NETCONN_NOCOPY);
+	netconn_write(conn, ftp_message_ask_for_login_and_password, sizeof(ftp_message_ask_for_login_and_password), NETCONN_NOCOPY);
 
 	//vTaskDelay(50);
 	recv_err = netconn_recv(conn, &inbuf);
@@ -87,9 +96,7 @@ static void ftp_server_serve(struct netconn * conn) {
 	}
 
 	/* received user name, ask for password */
-	char response3[34];
-	sprintf(response3, "331 Please specify the password.\r\n");
-	netconn_write(conn, response3, sizeof(response3), NETCONN_NOCOPY);
+	netconn_write(conn, ftp_message_ask_for_password, sizeof(ftp_message_ask_for_password), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
 	recv_err = netconn_recv(conn, &inbuf);
@@ -108,9 +115,7 @@ static void ftp_server_serve(struct netconn * conn) {
 	}
 
 	/* send message about succesfull login */
-	char response4[23];
-	sprintf(response4, "230 Login successful.\r\n");
-	netconn_write(conn, response4, sizeof(response4), NETCONN_NOCOPY);
+	netconn_write(conn, ftp_message_login_successful, sizeof(ftp_message_login_successful), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
 	recv_err = netconn_recv(conn, &inbuf);
@@ -129,9 +134,7 @@ static void ftp_server_serve(struct netconn * conn) {
 	}
 
 	/* send message about system type */
-/*	char response5[15];
-	sprintf(response5, "215 NAME stm.\r\n");
-	netconn_write(conn, response5, sizeof(response5), NETCONN_NOCOPY);
+/*	netconn_write(conn, ftp_message_system_type, sizeof(ftp_message_system_type), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
 	recv_err = netconn_recv(conn, &inbuf);
@@ -150,9 +153,7 @@ static void ftp_server_serve(struct netconn * conn) {
 	}*/
 
 	/* respond to FEAT command that i dont know it */
-/*	char response6[5];
-	sprintf(response6, "500\r\n");
-	netconn_write(conn, response6, sizeof(response6), NETCONN_NOCOPY);
+/*	netconn_write(conn, ftp_message_not_recognized_operation, sizeof(ftp_message_not_recognized_operation), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
 	recv_err = netconn_recv(conn, &inbuf);
@@ -171,9 +172,7 @@ static void ftp_server_serve(struct netconn * conn) {
 	}*/
 
 	/* respond with the current directory */
-	char response7[34];
-	sprintf(response7, "257 \"/\" is the current dierctory\r\n");
-	netconn_write(conn, response7, sizeof(response7), NETCONN_NOCOPY);
+	netconn_write(conn, ftp_message_current_root_directory, sizeof(ftp_message_current_root_directory), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
 	recv_err = netconn_recv(conn, &inbuf);
@@ -192,9 +191,7 @@ static void ftp_server_serve(struct netconn * conn) {
 	}
 
 	/*set binary mode */
-	char response8[30];
-	sprintf(response8, "200 Switching to Binary mode.\r\n");
-	netconn_write(conn, response8, sizeof(response8), NETCONN_NOCOPY);
+	netconn_write(conn, ftp_message_binary_mode, sizeof(ftp_message_binary_mode), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
 	recv_err = netconn_recv(conn, &inbuf);
@@ -213,9 +210,7 @@ static void ftp_server_serve(struct netconn * conn) {
 	}
 
 	/* passive mode */
-	char response9[48];
-	sprintf(response9, "227 Entering Passive Mode (172,16,25,125,0,23).\r\n");
-	netconn_write(conn, response9, sizeof(response9), NETCONN_NOCOPY);
+	netconn_write(conn, ftp_message_passive_mode, sizeof(ftp_message_passive_mode), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
 	recv_err = netconn_recv(conn, &inbuf);
@@ -234,18 +229,14 @@ static void ftp_server_serve(struct netconn * conn) {
 	}
 
 	/* tell that transmission has been started */
-	char response10[39];
-	sprintf(response10, "150 Here comes the directory listing.\r\n");
-	netconn_write(conn, response10, sizeof(response10), NETCONN_NOCOPY);
+	netconn_write(conn, ftp_message_open_data_connection, sizeof(ftp_message_open_data_connection), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
 	/*here should be data transmission on data port */
 
 
 	/* tell that transmission has ended */
-	char response11[24];
-	sprintf(response11, "226 Directory send OK.\r\n");
-	netconn_write(conn, response11, sizeof(response11), NETCONN_NOCOPY);
+	netconn_write(conn, ftp_message_closing_successful_data_connection, sizeof(ftp_message_closing_successful_data_connection), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
 	recv_err = netconn_recv(conn, &inbuf);
