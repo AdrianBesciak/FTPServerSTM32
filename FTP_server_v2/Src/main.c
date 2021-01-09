@@ -453,7 +453,7 @@ void StartDefaultTask(void const * argument)
   HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
 
 
-  osThreadDef(ftp_thread, ftp_server_netconn_thread, osPriorityNormal, 1, 1024);
+  osThreadDef(ftp_thread, ftp_server_netconn_thread, osPriorityNormal, 1, 2048);
   ftp_init_arguments ftp_args;
   ftp_args.huart = &huart3;
   osThreadCreate(osThread(ftp_thread), &ftp_args);
