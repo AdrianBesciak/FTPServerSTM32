@@ -37,14 +37,7 @@ const char ftp_message_open_data_connection[] = "150 Here comes the directory li
 const char ftp_message_closing_successful_data_connection[] = "226 Directory send OK.\r\n";
 
 
-
-//based on http server example from lab
-static void ftp_server_serve(struct netconn * conn) {
-
-
-	char logbuf[50];
-
-	/* initial response */
+void ftp_init_connection(struct netconn * conn, char * logbuf) {
 	netconn_write(conn, ftp_message_init_connection, sizeof(ftp_message_init_connection), NETCONN_NOCOPY);
 
 	uint8_t user_logged_in = 0;
@@ -53,102 +46,102 @@ static void ftp_server_serve(struct netconn * conn) {
 	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 
-
 	while( user_logged_in == 0 ) {
-		struct netbuf * inbuf;
-		err_t recv_err;
-		char * buf;
-		u16_t buflen;
-		err_t recv_err_ftp_init = netconn_recv(conn, &inbuf);
-		if (recv_err == ERR_OK) {
-			if (netconn_err(conn) == ERR_OK) {
-				netbuf_data(inbuf, (void**)&buf, &buflen);
-				netbuf_delete(inbuf);
-				/* Login section */
-				if (get_request_type(buf) == AUTH_TLS) {
-					HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-				}
-				/* Implemented version of authorization */
-				if (get_request_type(buf) == AUTH_SSL) {
-					HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-					netconn_write(conn, ftp_message_ask_for_login_and_password, sizeof(ftp_message_ask_for_login_and_password), NETCONN_NOCOPY);
+			struct netbuf * inbuf;
+			err_t recv_err;
+			char * buf;
+			u16_t buflen;
+			recv_err = netconn_recv(conn, &inbuf);
+			if (recv_err == ERR_OK) {
+				if (netconn_err(conn) == ERR_OK) {
+					netbuf_data(inbuf, (void**)&buf, &buflen);
+					netbuf_delete(inbuf);
+					/* Login section */
+					if (get_request_type(buf) == AUTH_TLS) {
+						HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+					}
+					/* Implemented version of authorization */
+					if (get_request_type(buf) == AUTH_SSL) {
+						HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+						netconn_write(conn, ftp_message_ask_for_login_and_password, sizeof(ftp_message_ask_for_login_and_password), NETCONN_NOCOPY);
 
-					struct netbuf * inbuf2;
-					err_t recv_err2;
-					char * buf2;
-					u16_t buflen2;
-					vTaskDelay(300);
-					recv_err2 = netconn_recv(conn, &inbuf2);
+						struct netbuf * inbuf2;
+						err_t recv_err2;
+						char * buf2;
+						u16_t buflen2;
+						vTaskDelay(300);
+						recv_err2 = netconn_recv(conn, &inbuf2);
 
-					sprintf(logbuf, "auth_ssl recv_err: %i, netconn_err: %i\n\r", recv_err2, netconn_err(conn));
-					HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+						sprintf(logbuf, "auth_ssl recv_err: %i, netconn_err: %i\n\r", recv_err2, netconn_err(conn));
+						HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
 
-					if (recv_err2 == ERR_OK) {
-						if (netconn_err(conn) == ERR_OK) {
-							netbuf_data(inbuf2, (void**)&buf2, &buflen2);
-							netbuf_delete(inbuf2);
-							if (get_request_type(buf2) == USER_name) {
+						if (recv_err2 == ERR_OK) {
+							if (netconn_err(conn) == ERR_OK) {
+								netbuf_data(inbuf2, (void**)&buf2, &buflen2);
+								netbuf_delete(inbuf2);
+								if (get_request_type(buf2) == USER_name) {
 
-								char name[50];
-								get_user_name(buf, name);
+									char name[50];
+									get_user_name(buf, name);
 
-								vTaskDelay(50);
-								sprintf(logbuf, "USER name %s\n\r", name);
-								HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+									vTaskDelay(50);
+									sprintf(logbuf, "USER name %s\n\r", name);
+									HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
 
 
-								netconn_write(conn, ftp_message_ask_for_password, sizeof(ftp_message_ask_for_password), NETCONN_NOCOPY);
+									netconn_write(conn, ftp_message_ask_for_password, sizeof(ftp_message_ask_for_password), NETCONN_NOCOPY);
 
-								vTaskDelay(50);
-								struct netbuf * inbuf3;
-								err_t recv_err3;
-								char * buf3;
-								u16_t buflen3;
+									vTaskDelay(50);
+									struct netbuf * inbuf3;
+									err_t recv_err3;
+									char * buf3;
+									u16_t buflen3;
 
-								recv_err3 = netconn_recv(conn, &inbuf3);	//returns -1 err_mem
+									recv_err3 = netconn_recv(conn, &inbuf3);	//returns -1 err_mem
 
-								sprintf(logbuf, "USER_pass recv_err: %i, netconn_err: %i\n\r", recv_err3, netconn_err(conn));
-								HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+									sprintf(logbuf, "USER_pass recv_err: %i, netconn_err: %i\n\r", recv_err3, netconn_err(conn));
+									HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
 
-								while(recv_err3 == ERR_MEM) {
-									HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-									vTaskDelay(100);
-								}
+									while(recv_err3 == ERR_MEM) {
+										HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+										vTaskDelay(100);
+									}
 
-								if (recv_err3 == ERR_OK) {
-									if (netconn_err(conn) == ERR_OK) {
-										netbuf_data(inbuf3, (void**)&buf3, &buflen3);
-										netbuf_delete(inbuf3);
-										HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-										if (get_request_type(buf3) == USER_password) {
-											HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-											HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-											char password[50];
-											get_user_password(buf, password);
+									if (recv_err3 == ERR_OK) {
+										if (netconn_err(conn) == ERR_OK) {
+											netbuf_data(inbuf3, (void**)&buf3, &buflen3);
+											netbuf_delete(inbuf3);
+											HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+											if (get_request_type(buf3) == USER_password) {
+												HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+												HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+												char password[50];
+												get_user_password(buf, password);
 
-											vTaskDelay(50);
-											sprintf(logbuf, "USER password %s\n\r", password);
-											HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-											vTaskDelay(100);
-
-											char usercmp[100];
-											int usercmpresult = strncmp(user_name, name, strlen(user_name));
-											sprintf(usercmp, "USERcmp: %s %s cmp: %i\n\r", user_name, name, usercmpresult);
-											HAL_UART_Transmit_IT(huart, usercmp, strlen(usercmp));
-											vTaskDelay(100);
-											char passcmp[100];
-											sprintf(passcmp, "Passcmp: %s %s cmp: %i\n\r", user_password, password, strncmp(user_password, password, strlen(user_password)) == 0);
-											HAL_UART_Transmit_IT(huart, passcmp, strlen(passcmp));
-											vTaskDelay(100);
-											// user authorization not used - every connection is passed as authorized
-											//if ( usercmpresult == 0/* && strncmp(user_password, password, strlen(user_password)) == 0*/) {
-												user_logged_in = 1;
-												netconn_write(conn, ftp_message_login_successful, sizeof(ftp_message_login_successful), NETCONN_NOCOPY);
-												break;
-											/*} else {
-												netconn_write(conn, ftp_message_login_incorrect, sizeof(ftp_message_login_incorrect), NETCONN_NOCOPY);
-												continue;
-											}*/
+												vTaskDelay(50);
+												sprintf(logbuf, "USER password %s\n\r", password);
+												HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+												vTaskDelay(100);
+/*
+												char usercmp[100];
+												int usercmpresult = strncmp(user_name, name, strlen(user_name));
+												sprintf(usercmp, "USERcmp: %s %s cmp: %i\n\r", user_name, name, usercmpresult);
+												HAL_UART_Transmit_IT(huart, usercmp, strlen(usercmp));
+												vTaskDelay(100);
+												char passcmp[100];
+												sprintf(passcmp, "Passcmp: %s %s cmp: %i\n\r", user_password, password, strncmp(user_password, password, strlen(user_password)) == 0);
+												HAL_UART_Transmit_IT(huart, passcmp, strlen(passcmp));
+												vTaskDelay(100);*/
+												// user authorization not used - every connection is passed as authorized
+												//if ( usercmpresult == 0/* && strncmp(user_password, password, strlen(user_password)) == 0*/) {
+													user_logged_in = 1;
+													netconn_write(conn, ftp_message_login_successful, sizeof(ftp_message_login_successful), NETCONN_NOCOPY);
+													break;
+												/*} else {
+													netconn_write(conn, ftp_message_login_incorrect, sizeof(ftp_message_login_incorrect), NETCONN_NOCOPY);
+													continue;
+												}*/
+											}
 										}
 									}
 								}
@@ -156,22 +149,27 @@ static void ftp_server_serve(struct netconn * conn) {
 						}
 					}
 				}
-			}
-			else
+				else
+					break;
+			} else
 				break;
-		} else
-			break;
-		/*user credentials request */
-		if (inbuf != NULL)
-			netbuf_delete(inbuf);
-		netconn_write(conn, ftp_message_ask_for_login_and_password, sizeof(ftp_message_ask_for_login_and_password), NETCONN_NOCOPY);
-		vTaskDelay(100);
-	}
+			/*user credentials request */
+			if (inbuf != NULL)
+				netbuf_delete(inbuf);
+			netconn_write(conn, ftp_message_ask_for_login_and_password, sizeof(ftp_message_ask_for_login_and_password), NETCONN_NOCOPY);
+			vTaskDelay(100);
+		}
+}
 
+//based on http server example from lab
+static void ftp_server_serve(struct netconn * conn) {
+	char logbuf[50];
+
+	ftp_init_connection(conn, logbuf);
 
 	struct netbuf * inbuf;
 	err_t recv_err;
-	char buf[50];
+	char * buf;
 	u16_t buflen;
 
 	vTaskDelay(50);
