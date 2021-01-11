@@ -161,137 +161,16 @@ void ftp_init_connection(struct netconn * conn, char * logbuf) {
 		}
 }
 
-//based on http server example from lab
-static void ftp_server_serve(struct netconn * conn) {
-	char logbuf[50];
-
-	ftp_init_connection(conn, logbuf);
-
-	struct netbuf * inbuf;
-	err_t recv_err;
-	char * buf;
-	u16_t buflen;
-
-	vTaskDelay(50);
-	recv_err = netconn_recv(conn, &inbuf);
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	sprintf(logbuf, "Recv_err: %i\n\r", recv_err);
-	//HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-
-	if (recv_err == ERR_OK) {
-		if (netconn_err(conn) == ERR_OK) {
-			netbuf_data(inbuf, (void**)&buf, &buflen);
-			sprintf(logbuf, "Otrzymano %i znakow, wiadomosc: %s\n\r", buflen, buf);
-			//HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-			vTaskDelay(300);
-		}
-	}
-
-	/* send message about system type */
-/*	netconn_write(conn, ftp_message_system_type, sizeof(ftp_message_system_type), NETCONN_NOCOPY);
-
-	vTaskDelay(50);
-	recv_err = netconn_recv(conn, &inbuf);
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	sprintf(logbuf, "Recv_err: %i\n\r", recv_err);
-	HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-
-	if (recv_err == ERR_OK) {
-		if (netconn_err(conn) == ERR_OK) {
-			netbuf_data(inbuf, (void**)&buf, &buflen);
-			sprintf(logbuf, "Otrzymano %i znakow, wiadomosc: %s\n\r", buflen, buf);
-			HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-			vTaskDelay(300);
-		}
-	}*/
-
-	/* respond to FEAT command that i dont know it */
-/*	netconn_write(conn, ftp_message_not_recognized_operation, sizeof(ftp_message_not_recognized_operation), NETCONN_NOCOPY);
-
-	vTaskDelay(50);
-	recv_err = netconn_recv(conn, &inbuf);
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	sprintf(logbuf, "Recv_err: %i\n\r", recv_err);
-	HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-
-	if (recv_err == ERR_OK) {
-		if (netconn_err(conn) == ERR_OK) {
-			netbuf_data(inbuf, (void**)&buf, &buflen);
-			sprintf(logbuf, "Otrzymano %i znakow, wiadomosc: %s\n\r", buflen, buf);
-			HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-			vTaskDelay(300);
-		}
-	}*/
-
-	/* respond with the current directory */
-	netconn_write(conn, ftp_message_current_root_directory, sizeof(ftp_message_current_root_directory), NETCONN_NOCOPY);
-
-	vTaskDelay(50);
-	recv_err = netconn_recv(conn, &inbuf);
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	//sprintf(logbuf, "Recv_err: %i\n\r", recv_err);
-	//HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-
-	if (recv_err == ERR_OK) {
-		if (netconn_err(conn) == ERR_OK) {
-			netbuf_data(inbuf, (void**)&buf, &buflen);
-			sprintf(logbuf, "Otrzymano %i znakow, wiadomosc: %s\n\r", buflen, buf);
-			//HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-			vTaskDelay(300);
-		}
-	}
-
-	/*set binary mode */
-	netconn_write(conn, ftp_message_binary_mode, sizeof(ftp_message_binary_mode), NETCONN_NOCOPY);
-
-	vTaskDelay(50);
-	recv_err = netconn_recv(conn, &inbuf);
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	sprintf(logbuf, "Recv_err: %i\n\r", recv_err);
-	//HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-
-	if (recv_err == ERR_OK) {
-		if (netconn_err(conn) == ERR_OK) {
-			netbuf_data(inbuf, (void**)&buf, &buflen);
-			sprintf(logbuf, "Otrzymano %i znakow, wiadomosc: %s\n\r", buflen, buf);
-			HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-			vTaskDelay(300);
-		}
-	}
-
-	/* passive mode */
-	netconn_write(conn, ftp_message_passive_mode, sizeof(ftp_message_passive_mode), NETCONN_NOCOPY);
-
-	vTaskDelay(50);
-	recv_err = netconn_recv(conn, &inbuf);
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	sprintf(logbuf, "Recv_err: %i\n\r", recv_err);
-	//HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-
-	if (recv_err == ERR_OK) {
-		if (netconn_err(conn) == ERR_OK) {
-			netbuf_data(inbuf, (void**)&buf, &buflen);
-			sprintf(logbuf, "Otrzymano %i znakow, wiadomosc: %s\n\r", buflen, buf);
-			HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-			vTaskDelay(300);
-		}
-	}
-
+void process_list_command(struct netconn * conn) {
 	/* tell that transmission has been started */
-	netconn_write(conn, ftp_message_open_data_connection, sizeof(ftp_message_open_data_connection), NETCONN_NOCOPY);
+/*	netconn_write(conn, ftp_message_open_data_connection, sizeof(ftp_message_open_data_connection), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
 	/*here should be data transmission on data port */
 
 
 	/* tell that transmission has ended */
-	netconn_write(conn, ftp_message_closing_successful_data_connection, sizeof(ftp_message_closing_successful_data_connection), NETCONN_NOCOPY);
+/*	netconn_write(conn, ftp_message_closing_successful_data_connection, sizeof(ftp_message_closing_successful_data_connection), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
 	recv_err = netconn_recv(conn, &inbuf);
@@ -307,11 +186,70 @@ static void ftp_server_serve(struct netconn * conn) {
 			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
 			vTaskDelay(300);
 		}
+	}*/
+	return;
+}
+
+//based on http server example from lab
+static void ftp_server_serve(struct netconn * conn) {
+	char logbuf[50];
+
+	ftp_init_connection(conn, logbuf);
+
+
+	while (netconn_err(conn) == ERR_OK) {
+		struct netbuf * inbuf;
+		err_t recv_err;
+		char * buf;
+		u16_t buflen;
+
+		recv_err = netconn_recv(conn, &inbuf);
+		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+		sprintf(logbuf, "Recv_err: %i\n\r", recv_err);
+		HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+
+		if (recv_err == ERR_OK) {
+			if (netconn_err(conn) == ERR_OK) {
+				netbuf_data(inbuf, (void**)&buf, &buflen);
+				/*sprintf(logbuf, "Otrzymano %i znakow, wiadomosc: %s\n\r", buflen, buf);
+				HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+				HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);*/
+
+				switch(get_request_type(buf)) {
+				case SYSTEM_TYPE:
+					netconn_write(conn, ftp_message_system_type, sizeof(ftp_message_system_type), NETCONN_NOCOPY);
+					break;
+				case EXTRA_FEATURES:
+					netconn_write(conn, ftp_message_not_recognized_operation, sizeof(ftp_message_not_recognized_operation), NETCONN_NOCOPY);
+					break;
+				case PWD:
+					netconn_write(conn, ftp_message_current_root_directory, sizeof(ftp_message_current_root_directory), NETCONN_NOCOPY);
+					break;
+				case BINARY_MODE:
+					netconn_write(conn, ftp_message_binary_mode, sizeof(ftp_message_binary_mode), NETCONN_NOCOPY);
+					break;
+				case PASSIVE_MODE:
+					netconn_write(conn, ftp_message_passive_mode, sizeof(ftp_message_passive_mode), NETCONN_NOCOPY);
+					break;
+				case LIST:
+					process_list_command(conn);
+					while(1){
+						continue;
+					}
+					break;
+				default:
+					netconn_write(conn, ftp_message_not_recognized_operation, sizeof(ftp_message_not_recognized_operation), NETCONN_NOCOPY);
+					break;
+				}
+
+				netbuf_delete(inbuf);
+				vTaskDelay(300);
+			}
+		}
 	}
 
 	vTaskDelay(1000);
 	netconn_close(conn);
-	netbuf_delete(inbuf);
 }
 
 void ftp_server_netconn_thread(void const * arguments) {
