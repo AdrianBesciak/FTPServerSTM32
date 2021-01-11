@@ -392,7 +392,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 		last_tick = cur_tick;
 		if(GPIO_Pin == GPIO_PIN_13){
 			const char * message = "Pressed button\n\r";
-			HAL_UART_Transmit_IT(&huart3, message, strlen(message));
+			//HAL_UART_Transmit_IT(&huart3, message, strlen(message));
 		}
 	}
 
@@ -453,7 +453,7 @@ void StartDefaultTask(void const * argument)
   HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
 
 
-  osThreadDef(ftp_thread, ftp_server_netconn_thread, osPriorityNormal, 1, 2048);
+  osThreadDef(ftp_thread, ftp_server_netconn_thread, osPriorityNormal, 1, 4096);
   ftp_init_arguments ftp_args;
   ftp_args.huart = &huart3;
   osThreadCreate(osThread(ftp_thread), &ftp_args);

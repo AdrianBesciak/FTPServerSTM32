@@ -6,6 +6,7 @@
  */
 
 #include <string.h>
+#include <stdint.h>
 
 #include "ftp_command_parser.h"
 
@@ -22,16 +23,16 @@ const char * list = "LIST\r\n";
 
 
 ftp_request_type get_request_type(const char * request) {
-	if (strlen(request) == strlen(auth_tls) && strcmp(request, auth_tls) == 0)
+	if ( strncmp(request, auth_tls, 8) == 0)
 		return AUTH_TLS;
 
-	if (strlen(request) == strlen(auth_ssl) && strcmp(request, auth_ssl) == 0)
+	if (strncmp(request, auth_ssl, 8) == 0)
 			return AUTH_SSL;
 
-	if (strlen(request) > 4 && strncmp(request, user, 4) == 0)
+	if (strncmp(request, user, 4) == 0)
 		return USER_name;
 
-	if (strlen(request) > 4 && strncmp(request, pass, 4) == 0)
+	if (strncmp(request, pass, 4) == 0)
 		return USER_password;
 
 	if (strlen(request) == strlen(syst) && strcmp(request, syst) == 0)
@@ -63,15 +64,17 @@ void get_user_name(const char * request, char * buffer) {
 		if (request[i] == '\r')
 			break;
 		buffer[buff_index] = request[i];
+		buff_index++;
 	}
 }
 
 /*assumed that buffer has enough lenght for password */
 void get_user_password(const char * request, char * buffer) {
 	uint8_t buff_index = 0;
-		for (int i = 5; i < strlen(request); i++) {
-			if (request[i] == '\r')
-				break;
-			buffer[buff_index] = request[i];
-		}
+	for (int i = 5; i < strlen(request); i++) {
+		if (request[i] == '\r')
+			break;
+		buffer[buff_index] = request[i];
+		buff_index++;
+	}
 }
