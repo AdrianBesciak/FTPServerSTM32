@@ -33,6 +33,7 @@ const char ftp_message_not_recognized_operation[] = "500\r\n";
 const char ftp_message_current_root_directory[] = "257 \"/\" is the current dierctory\r\n";
 const char ftp_message_binary_mode[] = "200 Switching to Binary mode.\r\n";
 const char ftp_message_passive_mode[] = "227 Entering Passive Mode (172,16,25,125,0,23).\r\n";
+const char ftp_message_service_tmp_unavailable[] = "421\r\n";
 const char ftp_message_open_data_connection[] = "150 Here comes the directory listing.\r\n";
 const char ftp_message_closing_successful_data_connection[] = "226 Directory send OK.\r\n";
 
@@ -256,15 +257,11 @@ static void ftp_server_serve(struct netconn * conn) {
 						netconn_delete(temp_data_conn);
 					}
 					temp_data_conn = create_new_connection(FTP_DATA_PORT);
-					if (temp_data_conn)
-						sprintf(logbuf, "Succesfully created temp_data_conn\r\n");
-					else
-						sprintf(logbuf, "Error in creating temp_data_conn\r\n");
-					HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-
-					netconn_write(conn, ftp_message_passive_mode, sizeof(ftp_message_passive_mode), NETCONN_NOCOPY);
-
 					if (temp_data_conn) {
+						sprintf(logbuf, "Succesfully created temp_data_conn\r\n");
+						HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+						netconn_write(conn, ftp_message_passive_mode, sizeof(ftp_message_passive_mode), NETCONN_NOCOPY);
+
 						netconn_listen(temp_data_conn);
 						/* accept an incoming connection */
 						err_t accept_err = netconn_accept(temp_data_conn, &data_conn);
@@ -273,9 +270,16 @@ static void ftp_server_serve(struct netconn * conn) {
 						} else {
 							sprintf(logbuf, "Succesfully openned data_conn\r\n");
 						}
+						vTaskDelay(100);
 						HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-
 					}
+					else {
+						sprintf(logbuf, "Error in creating temp_data_conn\r\n");
+						HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+						netconn_write(conn, ftp_message_service_tmp_unavailable, sizeof(ftp_message_service_tmp_unavailable), NETCONN_NOCOPY);
+						break;
+					}
+
 					break;
 				case LIST:
 					process_list_command(conn, data_conn);
