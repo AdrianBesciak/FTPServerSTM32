@@ -161,9 +161,9 @@ void ftp_init_connection(struct netconn * conn, char * logbuf) {
 		}
 }
 
-void process_list_command(struct netconn * conn) {
+void process_list_command(struct netconn * conn, struct netconn * data_conn) {
 	/* tell that transmission has been started */
-/*	netconn_write(conn, ftp_message_open_data_connection, sizeof(ftp_message_open_data_connection), NETCONN_NOCOPY);
+	netconn_write(conn, ftp_message_open_data_connection, sizeof(ftp_message_open_data_connection), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
 	/*here should be data transmission on data port */
@@ -190,9 +190,29 @@ void process_list_command(struct netconn * conn) {
 	return;
 }
 
+struct netconn * create_new_connection(uint16_t port) {
+	struct netconn * conn, * newconn;
+	err_t err, accept_err;
+
+	/* Create a new TCP connection handle*/
+	conn = netconn_new(NETCONN_TCP);
+
+	if (conn != NULL) {
+		err = netconn_bind(conn, NULL, port);
+		if (err == ERR_OK) {
+			return conn;
+		} else {
+			return NULL;
+		}
+	}
+	return NULL;
+}
+
 //based on http server example from lab
 static void ftp_server_serve(struct netconn * conn) {
 	char logbuf[50];
+	struct netconn * data_conn = NULL;
+	struct netconn * temp_data_conn = NULL;
 
 	ftp_init_connection(conn, logbuf);
 
@@ -229,10 +249,36 @@ static void ftp_server_serve(struct netconn * conn) {
 					netconn_write(conn, ftp_message_binary_mode, sizeof(ftp_message_binary_mode), NETCONN_NOCOPY);
 					break;
 				case PASSIVE_MODE:
+					if (data_conn != NULL) {
+						netconn_delete(data_conn);
+					}
+					if (temp_data_conn != NULL) {
+						netconn_delete(temp_data_conn);
+					}
+					temp_data_conn = create_new_connection(FTP_DATA_PORT);
+					if (temp_data_conn)
+						sprintf(logbuf, "Succesfully created temp_data_conn\r\n");
+					else
+						sprintf(logbuf, "Error in creating temp_data_conn\r\n");
+					HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+
 					netconn_write(conn, ftp_message_passive_mode, sizeof(ftp_message_passive_mode), NETCONN_NOCOPY);
+
+					if (temp_data_conn) {
+						netconn_listen(temp_data_conn);
+						/* accept an incoming connection */
+						err_t accept_err = netconn_accept(temp_data_conn, &data_conn);
+						if (accept_err != ERR_OK) {
+							sprintf(logbuf, "Error in openning data_conn\r\n");
+						} else {
+							sprintf(logbuf, "Succesfully openned data_conn\r\n");
+						}
+						HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+
+					}
 					break;
 				case LIST:
-					process_list_command(conn);
+					process_list_command(conn, data_conn);
 					while(1){
 						continue;
 					}
@@ -266,7 +312,7 @@ void ftp_server_netconn_thread(void const * arguments) {
 	conn = netconn_new(NETCONN_TCP);
 
 	if (conn != NULL) {
-		err = netconn_bind(conn, NULL, FTP_DATA_PORT);
+		err = netconn_bind(conn, NULL, FTP_COMMAND_PORT);
 		if (err == ERR_OK) {
 			/* Put the connection into LISTEN state */
 			netconn_listen(conn);

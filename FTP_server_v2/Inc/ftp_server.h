@@ -8,7 +8,8 @@
 #ifndef FTP_SERVER_H_
 #define FTP_SERVER_H_
 
-#define FTP_DATA_PORT 21
+#define FTP_COMMAND_PORT 21
+#define FTP_DATA_PORT 23
 
 typedef struct ftp_init_arguments {
 	UART_HandleTypeDef * huart;
