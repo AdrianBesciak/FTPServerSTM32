@@ -265,21 +265,16 @@ static void ftp_server_serve(struct netconn * conn) {
 						netconn_listen(temp_data_conn);
 						/* accept an incoming connection */
 						err_t accept_err = netconn_accept(temp_data_conn, &data_conn);
-						if (accept_err != ERR_OK) {
-							sprintf(logbuf, "Error in openning data_conn\r\n");
-						} else {
+						if (accept_err == ERR_OK) {
 							sprintf(logbuf, "Succesfully openned data_conn\r\n");
+							vTaskDelay(100);
+							HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+							break;
 						}
-						vTaskDelay(100);
-						HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
 					}
-					else {
-						sprintf(logbuf, "Error in creating temp_data_conn\r\n");
-						HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-						netconn_write(conn, ftp_message_service_tmp_unavailable, sizeof(ftp_message_service_tmp_unavailable), NETCONN_NOCOPY);
-						break;
-					}
-
+					sprintf(logbuf, "Error in creating or openning data_conn\r\n");
+					HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+					netconn_write(conn, ftp_message_service_tmp_unavailable, sizeof(ftp_message_service_tmp_unavailable), NETCONN_NOCOPY);
 					break;
 				case LIST:
 					process_list_command(conn, data_conn);
