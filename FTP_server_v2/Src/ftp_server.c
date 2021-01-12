@@ -30,6 +30,7 @@ const char ftp_message_login_successful[] = "230 Login successful.\r\n";
 const char ftp_message_login_incorrect[] = "530 Login incorrect.\r\n";
 const char ftp_message_system_type[] = "215 UNIX Type: L8.\r\n";
 const char ftp_message_not_recognized_operation[] = "500\r\n";
+const char ftp_message_command_not_implemented[] = "502 Command not implemented\r\n";
 const char ftp_message_current_root_directory[] = "257 \"/\" is the current dierctory\r\n";
 const char ftp_message_binary_mode[] = "200 Switching to Binary mode.\r\n";
 const char ftp_message_passive_mode[] = "227 Entering Passive Mode (172,16,25,125,0,23).\r\n";
@@ -241,7 +242,7 @@ static void ftp_server_serve(struct netconn * conn) {
 					netconn_write(conn, ftp_message_system_type, sizeof(ftp_message_system_type), NETCONN_NOCOPY);
 					break;
 				case EXTRA_FEATURES:
-					netconn_write(conn, ftp_message_not_recognized_operation, sizeof(ftp_message_not_recognized_operation), NETCONN_NOCOPY);
+					netconn_write(conn, ftp_message_command_not_implemented, sizeof(ftp_message_command_not_implemented), NETCONN_NOCOPY);
 					break;
 				case PWD:
 					netconn_write(conn, ftp_message_current_root_directory, sizeof(ftp_message_current_root_directory), NETCONN_NOCOPY);
