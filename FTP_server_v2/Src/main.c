@@ -439,11 +439,49 @@ void StartDefaultTask(void const * argument)
 
   /* USER CODE BEGIN 5 */
 
+  /* USB stick init section */
+
+  init_usb_stick_services(&huart3);
+
+  MX_DriverVbusFS(0); //wlacza zasilanie urzadzenia USB
+  const char* msg = "waiting for USB device...";
+  HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
+
+  do{
+	  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
+	  const char * dot = ".";
+	  HAL_UART_Transmit_IT(&huart3, dot, strlen(dot));
+	  vTaskDelay(100);
+  }while(Appli_state != APPLICATION_READY);
+
+  const char * message = "\n\rUSB device ready!\n\r";
+  HAL_UART_Transmit_IT(&huart3, message, strlen(message));
+
+  FATFS *fs;     /* Ponter to the filesystem object */
+  fs = malloc(sizeof (FATFS));           /* Get work area for the volume */
+  FRESULT res = f_mount(fs, "", 0);                    /* Mount the default drive */
+
+ /* char buff[256];
+  if (res == FR_OK) {
+	  strcpy(buff, "/");
+	  res = scan_files(buff);
+  }
+
+  vTaskDelay(1000);
+  sprintf(logdata, "USB_Stick root_dir %lu\r\n", fs->dirbase);
+  vTaskDelay(1000);*/
+
+  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+
+
+
+  /* DHCP and FTP init section */
   sprintf(logdata, "Obtaining address with DHCP...\n\r");
   HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
   struct dhcp *dhcp = netif_dhcp_data(&gnetif);
   do
   {
+	  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
 	  sprintf(logdata, "dhcp->state = %02X\n\r",dhcp->state);
 	  HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
 	  vTaskDelay(250);
@@ -451,40 +489,25 @@ void StartDefaultTask(void const * argument)
   vTaskDelay(200);
   sprintf(logdata, "DHCP bound with address %s\n\r", ipaddr_ntoa(&(gnetif.ip_addr)));
   HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
-
+  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
   osThreadDef(ftp_thread, ftp_server_netconn_thread, osPriorityNormal, 1, 4096);
   ftp_init_arguments ftp_args;
   ftp_args.huart = &huart3;
-  osThreadCreate(osThread(ftp_thread), &ftp_args);
+  ftp_args.fs = fs;
+  osThreadId ftp_thread = osThreadCreate(osThread(ftp_thread), &ftp_args);
 
+  while (ftp_thread == NULL) {
+	  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
+	  vTaskDelay(100);
+  }
 
   //lab2_3
-/*
-  MX_DriverVbusFS(0); //wlacza zasilanie urzadzenia USB
-  const char* msg = "waiting for USB device...\n\r";
-  HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
-
-  do{
-	  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-	  vTaskDelay(100);
-	  HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
-	  const char * dot = ".";
-	  HAL_UART_Transmit_IT(&huart3, dot, strlen(dot));
-	  vTaskDelay(100);
-   }while(Appli_state != APPLICATION_READY);
-
-   const char * message = "\n\rUSB device ready!\n\r";
-   HAL_UART_Transmit_IT(&huart3, message, strlen(message));
-   HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 
 
-   FRESULT res;
-	FIL file;
-	FATFS *fs;     /* Ponter to the filesystem object */
 
-/*	fs = malloc(sizeof (FATFS));           /* Get work area for the volume */
-/*	f_mount(fs, "", 0);                    /* Mount the default drive */
+
+
 
 /*   int task = 1;
 

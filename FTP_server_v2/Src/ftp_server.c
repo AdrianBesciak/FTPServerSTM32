@@ -16,6 +16,7 @@
 
 #include "ftp_server.h"
 #include "ftp_command_parser.h"
+#include "usb_stick_services.h"
 
 UART_HandleTypeDef * huart;
 
@@ -169,26 +170,15 @@ void process_list_command(struct netconn * conn, struct netconn * data_conn) {
 
 	vTaskDelay(50);
 	/*here should be data transmission on data port */
+	static uint8_t data_buf[DATA_BUF_SIZE];
+
+	get_files_in_dir(current_directory, data_buf);
+	netconn_write(data_conn, data_buf, strlen(data_buf), NETCONN_NOCOPY);
 
 
 	/* tell that transmission has ended */
-/*	netconn_write(conn, ftp_message_closing_successful_data_connection, sizeof(ftp_message_closing_successful_data_connection), NETCONN_NOCOPY);
+	netconn_write(conn, ftp_message_closing_successful_data_connection, sizeof(ftp_message_closing_successful_data_connection), NETCONN_NOCOPY);
 
-	vTaskDelay(50);
-	recv_err = netconn_recv(conn, &inbuf);
-	HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-	//sprintf(logbuf, "Recv_err: %i\n\r", recv_err);
-	//HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-
-	if (recv_err == ERR_OK) {
-		if (netconn_err(conn) == ERR_OK) {
-			netbuf_data(inbuf, (void**)&buf, &buflen);
-			sprintf(logbuf, "Otrzymano %i znakow, wiadomosc: %s\n\r", buflen, buf);
-			HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-			vTaskDelay(300);
-		}
-	}*/
 	return;
 }
 
@@ -279,9 +269,11 @@ static void ftp_server_serve(struct netconn * conn) {
 					break;
 				case LIST:
 					process_list_command(conn, data_conn);
-					while(1){
-						continue;
-					}
+					netconn_close(data_conn);
+					netconn_close(temp_data_conn);
+					vTaskDelay(100);
+					netconn_delete(data_conn);
+					netconn_delete(temp_data_conn);
 					break;
 				default:
 					netconn_write(conn, ftp_message_not_recognized_operation, sizeof(ftp_message_not_recognized_operation), NETCONN_NOCOPY);

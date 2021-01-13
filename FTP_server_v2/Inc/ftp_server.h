@@ -10,9 +10,11 @@
 
 #define FTP_COMMAND_PORT 21
 #define FTP_DATA_PORT 23
+#define DATA_BUF_SIZE 800
 
 typedef struct ftp_init_arguments {
 	UART_HandleTypeDef * huart;
+	FATFS * fs;
 } ftp_init_arguments;
 
 void ftp_server_netconn_thread(void const * arguments);
