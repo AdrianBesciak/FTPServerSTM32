@@ -35,6 +35,7 @@ const char ftp_message_command_not_implemented[] = "502 Command not implemented\
 const char ftp_message_current_directory_left[] = "257 ";
 const char ftp_message_current_directory_right[] = " is the current dierctory\r\n";
 const char ftp_message_binary_mode[] = "200 Switching to Binary mode.\r\n";
+const char ftp_message_ascii_mode[] = "200 Switching to ASCII mode.\r\n";
 const char ftp_message_passive_mode[] = "227 Entering Passive Mode (172,16,25,125,0,23).\r\n";
 const char ftp_message_service_tmp_unavailable[] = "421\r\n";
 const char ftp_message_open_data_connection[] = "150 Here comes the directory listing.\r\n";
@@ -155,6 +156,11 @@ static void ftp_server_serve(struct netconn * conn) {
 					break;
 				case BINARY_MODE:
 					netconn_write(conn, ftp_message_binary_mode, sizeof(ftp_message_binary_mode), NETCONN_NOCOPY);
+					break;
+				case ASCII_MODE:
+					// TODO
+					//not implemented yet,  and not important as long as with this serwer communicates only with windows machines
+					netconn_write(conn, ftp_message_ascii_mode, sizeof(ftp_message_ascii_mode), NETCONN_NOCOPY);
 					break;
 				case PASSIVE_MODE:
 					if (data_conn != NULL) {
