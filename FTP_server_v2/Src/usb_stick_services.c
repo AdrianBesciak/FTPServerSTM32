@@ -14,6 +14,8 @@
 #include "usb_stick_services.h"
 #include "ftp_server.h"
 
+const char * padding = "                    ";
+
 char current_directory[50] = "/";
 
 UART_HandleTypeDef *huart;
@@ -21,6 +23,7 @@ UART_HandleTypeDef *huart;
 void init_usb_stick_services(UART_HandleTypeDef * recv_huart) {
 	huart = recv_huart;
 }
+
 
 FRESULT get_files_in_dir(char* path, uint8_t * files_list)
 {
@@ -48,7 +51,10 @@ FRESULT get_files_in_dir(char* path, uint8_t * files_list)
             	logdata[0] = (fno.fattrib & AM_DIR) ? 'd' : '-';
             	(fno.fattrib & AM_RDO) ? sprintf(&(logdata[1]), "r--r--r--    ") : sprintf(&(logdata[1]), "rw-rw-rw-    ");
             	logdata[14] = (fno.fattrib & AM_DIR) ? '2' : '1';
-                sprintf(&(logdata[15]), " 1000     1000     %u %u %u %s\r\n\0", fno.fsize, fno.fdate, fno.ftime, fno.fname);
+            	char fileSize[12];
+            	sprintf(fileSize, "%u", fno.fsize);
+            	uint8_t padLen = 12 - strlen(fileSize);
+                sprintf(&(logdata[15]), " 1000     1000 %*.*s%s %s\r\n\0", padLen, padLen, padding, fileSize, fno.fname);
                 HAL_UART_Transmit_IT(huart, logdata, strlen(logdata));
                 int written = sprintf(&(files_list[list_index]), "%s", logdata);
                 list_index += written;
