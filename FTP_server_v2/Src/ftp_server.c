@@ -32,12 +32,13 @@ const char ftp_message_login_incorrect[] = "530 Login incorrect.\r\n";
 const char ftp_message_system_type[] = "215 UNIX Type: L8.\r\n";
 const char ftp_message_not_recognized_operation[] = "500\r\n";
 const char ftp_message_command_not_implemented[] = "502 Command not implemented\r\n";
-const char ftp_message_current_root_directory[] = "257 \"/\" is the current dierctory\r\n";
+const char ftp_message_current_directory_left[] = "257 ";
+const char ftp_message_current_directory_right[] = " is the current dierctory\r\n";
 const char ftp_message_binary_mode[] = "200 Switching to Binary mode.\r\n";
 const char ftp_message_passive_mode[] = "227 Entering Passive Mode (172,16,25,125,0,23).\r\n";
 const char ftp_message_service_tmp_unavailable[] = "421\r\n";
 const char ftp_message_open_data_connection[] = "150 Here comes the directory listing.\r\n";
-const char ftp_message_closing_successful_data_connection[] = "226 Directory send OK.\r\n";
+const char ftp_message_closing_successful_data_connection[] = "226 Transfer complete.\r\n";
 
 
 void process_list_command(struct netconn * conn, struct netconn * data_conn) {
@@ -81,6 +82,8 @@ static void ftp_server_serve(struct netconn * conn) {
 	char logbuf[50];
 	struct netconn * data_conn = NULL;
 	struct netconn * temp_data_conn = NULL;
+
+	char message_buf[MESSAGE_BUF_SIZE];
 
 	char name[50];
 	char password[50];
@@ -142,7 +145,8 @@ static void ftp_server_serve(struct netconn * conn) {
 					netconn_write(conn, ftp_message_command_not_implemented, sizeof(ftp_message_command_not_implemented), NETCONN_NOCOPY);
 					break;
 				case PWD:
-					netconn_write(conn, ftp_message_current_root_directory, sizeof(ftp_message_current_root_directory), NETCONN_NOCOPY);
+					sprintf(message_buf, "%s%s%s", ftp_message_current_directory_left, current_directory, ftp_message_current_directory_right);
+					netconn_write(conn, message_buf, sizeof(message_buf), NETCONN_NOCOPY);
 					break;
 				case BINARY_MODE:
 					netconn_write(conn, ftp_message_binary_mode, sizeof(ftp_message_binary_mode), NETCONN_NOCOPY);

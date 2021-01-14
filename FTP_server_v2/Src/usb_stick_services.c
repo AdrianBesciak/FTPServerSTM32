@@ -16,7 +16,7 @@
 
 const char * padding = "                    ";
 
-char current_directory[50] = "/";
+char current_directory[CURRENT_DIRECTORY_SIZE] = "/";
 
 UART_HandleTypeDef *huart;
 
