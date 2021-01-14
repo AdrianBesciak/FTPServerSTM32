@@ -17,9 +17,11 @@ const char * pass = "PASS";
 const char * syst = "SYST\r\n";
 const char * feat = "FEAT\r\n";
 const char * pwd = "PWD\r\n";
+const char * cwd = "CWD ";
 const char * type = "TYPE";
 const char * pasv = "PASV\r\n";
 const char * list = "LIST\r\n";
+const char * retr = "RETR ";
 
 
 ftp_request_type get_request_type(const char * request) {
@@ -44,9 +46,14 @@ ftp_request_type get_request_type(const char * request) {
 	if (strncmp(request, pwd, 3) == 0)
 		return PWD;
 
+	if (strncmp(request, cwd, 3) == 0)
+			return CWD;
+
 	if (strncmp(request, type, 4) == 0) {
 		if (request[5] == 'I')
 			return BINARY_MODE;
+		else if (request[5] == 'A')
+			return ASCII_MODE;
 		else
 			return NOT_SUPPORTED;
 	}
@@ -55,6 +62,9 @@ ftp_request_type get_request_type(const char * request) {
 
 	if (strncmp(request, list, 4) == 0)
 		return LIST;
+
+	if (strncmp(request, retr, 4) == 0)
+			return SEND_FILE;
 }
 
 /* assumed that buffer has enough length for user_name */

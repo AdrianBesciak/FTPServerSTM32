@@ -16,10 +16,13 @@ typedef enum ftp_request_type {
 	SYSTEM_TYPE = 4,
 	EXTRA_FEATURES = 5,
 	PWD = 6,
-	BINARY_MODE = 7,
-	PASSIVE_MODE = 8,
-	LIST = 9,
-	NOT_SUPPORTED = 10
+	CWD = 7,
+	BINARY_MODE = 8,
+	ASCII_MODE = 9,
+	PASSIVE_MODE = 10,
+	LIST = 11,
+	SEND_FILE = 12,
+	NOT_SUPPORTED = 100
 } ftp_request_type;
 
 ftp_request_type get_request_type(const char * request);
