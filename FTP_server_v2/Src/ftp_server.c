@@ -89,7 +89,7 @@ static void ftp_server_serve(struct netconn * conn) {
 
 	uint8_t transmission_not_finished = 1;
 
-	while (netconn_err(conn) == ERR_OK) {
+	while (netconn_err(conn) == ERR_OK && transmission_not_finished) {
 		struct netbuf * inbuf;
 		err_t recv_err;
 		char * buf;
@@ -181,6 +181,7 @@ static void ftp_server_serve(struct netconn * conn) {
 					vTaskDelay(100);
 					netconn_delete(data_conn);
 					netconn_delete(temp_data_conn);
+					transmission_not_finished = 0;
 					break;
 				default:
 					netconn_write(conn, ftp_message_not_recognized_operation, sizeof(ftp_message_not_recognized_operation), NETCONN_NOCOPY);
@@ -189,6 +190,8 @@ static void ftp_server_serve(struct netconn * conn) {
 
 				netbuf_delete(inbuf);
 				vTaskDelay(300);
+			} else {
+				break;
 			}
 		}
 	}
