@@ -88,3 +88,13 @@ void get_user_password(const char * request, char * buffer) {
 		buff_index++;
 	}
 }
+
+void get_new_WD(const char *request, char * buffer) {
+	uint8_t buff_index = 0;
+	for (int i = 4; i < strlen(request); i++) {
+		if (request[i] == '\r')
+			break;
+		buffer[buff_index] = request[i];
+		buff_index++;
+	}
+}

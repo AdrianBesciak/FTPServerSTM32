@@ -39,6 +39,7 @@ const char ftp_message_passive_mode[] = "227 Entering Passive Mode (172,16,25,12
 const char ftp_message_service_tmp_unavailable[] = "421\r\n";
 const char ftp_message_open_data_connection[] = "150 Here comes the directory listing.\r\n";
 const char ftp_message_closing_successful_data_connection[] = "226 Transfer complete.\r\n";
+const char ftp_message_directory_changed[] = "250 Directory succesfully changed.\r\n";
 
 
 void process_list_command(struct netconn * conn, struct netconn * data_conn) {
@@ -147,6 +148,10 @@ static void ftp_server_serve(struct netconn * conn) {
 				case PWD:
 					sprintf(message_buf, "%s%s%s", ftp_message_current_directory_left, current_directory, ftp_message_current_directory_right);
 					netconn_write(conn, message_buf, sizeof(message_buf), NETCONN_NOCOPY);
+					break;
+				case CWD:
+					get_new_WD(buf, current_directory);
+					netconn_write(conn, ftp_message_directory_changed, sizeof(ftp_message_directory_changed), NETCONN_NOCOPY);
 					break;
 				case BINARY_MODE:
 					netconn_write(conn, ftp_message_binary_mode, sizeof(ftp_message_binary_mode), NETCONN_NOCOPY);
