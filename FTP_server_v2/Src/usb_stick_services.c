@@ -32,7 +32,7 @@ FRESULT get_files_in_dir(char* path, uint8_t * files_list)
     UINT i;
     static FILINFO fno;
 
-    char logdata[200];
+    char fileData[200];
     files_list[0] = '\0';
     int list_index = 0;
 
@@ -40,31 +40,24 @@ FRESULT get_files_in_dir(char* path, uint8_t * files_list)
     if (res == FR_OK) {
         for (;;) {
             res = f_readdir(&dir, &fno);                   /* Read a directory item */
-            if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
-            if (fno.fattrib & AM_DIR && NULL) {                    /* It is a directory temporarily not use*/
-                i = strlen(path);
-                sprintf(&path[i], "/%s", fno.fname);
-                res = scan_files(path);                    /* Enter the directory */
-                if (res != FR_OK) break;
-                path[i] = 0;
-            } else {                                       /* It is a file. */
-            	logdata[0] = (fno.fattrib & AM_DIR) ? 'd' : '-';
-            	(fno.fattrib & AM_RDO) ? sprintf(&(logdata[1]), "r--r--r--    ") : sprintf(&(logdata[1]), "rw-rw-rw-    ");
-            	logdata[14] = (fno.fattrib & AM_DIR) ? '2' : '1';
-            	char fileSize[12];
-            	sprintf(fileSize, "%u", fno.fsize);
-            	uint8_t padLen = 12 - strlen(fileSize);
-                sprintf(&(logdata[15]), " 1000     1000 %*.*s%s %s\r\n\0", padLen, padLen, padding, fileSize, fno.fname);
-                HAL_UART_Transmit_IT(huart, logdata, strlen(logdata));
-                int written = sprintf(&(files_list[list_index]), "%s", logdata);
-                list_index += written;
-                vTaskDelay(200);
-            }
+            if (res != FR_OK || fno.fname[0] == 0)
+            	break;  /* Break on error or end of dir */
+
+			fileData[0] = (fno.fattrib & AM_DIR) ? 'd' : '-';	//directory?
+			(fno.fattrib & AM_RDO) ? sprintf(&(fileData[1]), "r--r--r--    ") : sprintf(&(fileData[1]), "rw-rw-rw-    ");	//readable/writeable
+
+			fileData[14] = (fno.fattrib & AM_DIR) ? '2' : '1'; //number of connections to file
+
+			char fileSize[12];	//prepare padding and filesize string
+			sprintf(fileSize, "%u", fno.fsize);
+			uint8_t padLen = 12 - strlen(fileSize);
+
+			sprintf(&(fileData[15]), " 1000     1000 %*.*s%s %s\r\n\0", padLen, padLen, padding, fileSize, fno.fname);	//stick file owner, size and name
+
+			int written = sprintf(&(files_list[list_index]), "%s", fileData);
+			list_index += written;
         }
         f_closedir(&dir);
     }
-    HAL_UART_Transmit_IT(huart, files_list, strlen(files_list));
-    vTaskDelay(1000);
-
     return res;
 }
