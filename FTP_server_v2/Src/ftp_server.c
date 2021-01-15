@@ -36,12 +36,18 @@ const char ftp_message_current_directory_left[] = "257 ";
 const char ftp_message_current_directory_right[] = " is the current dierctory\r\n";
 const char ftp_message_binary_mode[] = "200 Switching to Binary mode.\r\n";
 const char ftp_message_ascii_mode[] = "200 Switching to ASCII mode.\r\n";
-const char ftp_message_passive_mode[] = "227 Entering Passive Mode (172,16,25,125,0,23).\r\n";
+const char ftp_message_passive_mode[] = "227 Entering Passive Mode (172,16,25,125,0,";
 const char ftp_message_service_tmp_unavailable[] = "421\r\n";
 const char ftp_message_open_data_connection[] = "150 Here comes the directory listing.\r\n";
 const char ftp_message_closing_successful_data_connection[] = "226 Transfer complete.\r\n";
 const char ftp_message_directory_changed[] = "250 Directory succesfully changed.\r\n";
 
+uint8_t get_data_port() {
+	static uint8_t port = FTP_DATA_PORT;
+	if ( port == 0 )
+		port = FTP_DATA_PORT;
+	return port++;
+}
 
 void process_list_command(struct netconn * conn, struct netconn * data_conn) {
 	/* tell that transmission has been started */
@@ -169,11 +175,14 @@ static void ftp_server_serve(struct netconn * conn) {
 					if (temp_data_conn != NULL) {
 						netconn_delete(temp_data_conn);
 					}
-					temp_data_conn = create_new_connection(FTP_DATA_PORT);
+					//temp_data_conn = create_new_connection(FTP_DATA_PORT);
+					uint8_t port = get_data_port();
+					temp_data_conn = create_new_connection(port);
 					if (temp_data_conn) {
 						sprintf(logbuf, "Succesfully created temp_data_conn\r\n");
 						HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-						netconn_write(conn, ftp_message_passive_mode, sizeof(ftp_message_passive_mode), NETCONN_NOCOPY);
+						sprintf(message_buf, "%s%i).\r\n", ftp_message_passive_mode, port);
+						netconn_write(conn, message_buf, sizeof(message_buf), NETCONN_NOCOPY);
 
 						netconn_listen(temp_data_conn);
 						/* accept an incoming connection */
