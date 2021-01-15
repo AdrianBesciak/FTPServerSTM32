@@ -170,7 +170,7 @@ static void ftp_server_serve(struct netconn * conn) {
 					break;
 				case PWD:
 					sprintf(message_buf, "%s%s%s", ftp_message_current_directory_left, current_directory, ftp_message_current_directory_right);
-					netconn_write(conn, message_buf, sizeof(message_buf), NETCONN_NOCOPY);
+					netconn_write(conn, message_buf, strlen(message_buf), NETCONN_NOCOPY);
 					break;
 				case CWD:
 					get_new_WD(buf, current_directory);
