@@ -38,9 +38,10 @@ const char ftp_message_binary_mode[] = "200 Switching to Binary mode.\r\n";
 const char ftp_message_ascii_mode[] = "200 Switching to ASCII mode.\r\n";
 const char ftp_message_passive_mode[] = "227 Entering Passive Mode (172,16,25,125,0,";
 const char ftp_message_service_tmp_unavailable[] = "421\r\n";
-const char ftp_message_open_data_connection[] = "150 Here comes the directory listing.\r\n";
+const char ftp_message_open_data_connection[] = "150 Data transmission has been started.\r\n";
 const char ftp_message_closing_successful_data_connection[] = "226 Transfer complete.\r\n";
 const char ftp_message_directory_changed[] = "250 Directory succesfully changed.\r\n";
+const char ftp_message_request_passive_mode[] = "425 Use PASV first.\r\n";
 
 uint8_t get_data_port() {
 	static uint8_t port = FTP_DATA_PORT;
@@ -54,11 +55,25 @@ void process_list_command(struct netconn * conn, struct netconn * data_conn) {
 	netconn_write(conn, ftp_message_open_data_connection, sizeof(ftp_message_open_data_connection), NETCONN_NOCOPY);
 
 	vTaskDelay(50);
-	/*here should be data transmission on data port */
 	static uint8_t data_buf[DATA_BUF_SIZE];
 
 	get_files_in_dir(current_directory, data_buf);
 	netconn_write(data_conn, data_buf, strlen(data_buf), NETCONN_NOCOPY);
+
+
+	/* tell that transmission has ended */
+	netconn_write(conn, ftp_message_closing_successful_data_connection, sizeof(ftp_message_closing_successful_data_connection), NETCONN_NOCOPY);
+
+	return;
+}
+
+void send_file(struct netconn * conn, struct netconn * data_conn, const char * file) {
+	/* tell that transmission has been started */
+	netconn_write(conn, ftp_message_open_data_connection, sizeof(ftp_message_open_data_connection), NETCONN_NOCOPY);
+
+	vTaskDelay(50);
+	/*here should be data transmission on data port */
+
 
 
 	/* tell that transmission has ended */
@@ -95,6 +110,7 @@ static void ftp_server_serve(struct netconn * conn) {
 
 	char name[50];
 	char password[50];
+	char filename[50];
 
 	netconn_write(conn, ftp_message_init_connection, sizeof(ftp_message_init_connection), NETCONN_NOCOPY);
 
@@ -199,13 +215,26 @@ static void ftp_server_serve(struct netconn * conn) {
 					netconn_write(conn, ftp_message_service_tmp_unavailable, sizeof(ftp_message_service_tmp_unavailable), NETCONN_NOCOPY);
 					break;
 				case LIST:
+					if (data_conn == NULL) {
+						netconn_write(conn, ftp_message_request_passive_mode, sizeof(ftp_message_request_passive_mode), NETCONN_NOCOPY);
+						break;
+					}
 					process_list_command(conn, data_conn);
 					netconn_close(data_conn);
 					netconn_close(temp_data_conn);
 					vTaskDelay(100);
 					netconn_delete(data_conn);
 					netconn_delete(temp_data_conn);
+					//data_conn = temp_data_conn = NULL;
 					transmission_not_finished = 0;
+					break;
+				case SEND_FILE:
+					if (data_conn == NULL) {
+						netconn_write(conn, ftp_message_request_passive_mode, sizeof(ftp_message_request_passive_mode), NETCONN_NOCOPY);
+						break;
+					}
+					get_filename(buf, filename);
+					send_file(conn, data_conn, filename);
 					break;
 				default:
 					netconn_write(conn, ftp_message_not_recognized_operation, sizeof(ftp_message_not_recognized_operation), NETCONN_NOCOPY);

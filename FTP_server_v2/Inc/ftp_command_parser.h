@@ -30,6 +30,7 @@ ftp_request_type get_request_type(const char * request);
 void get_user_name(const char * request, char * buffer);
 void get_user_password(const char * request, char * buffer);
 void get_new_WD(const char *request, char * buffer);
+void get_filename(const char *request, char * buffer);
 
 
 
