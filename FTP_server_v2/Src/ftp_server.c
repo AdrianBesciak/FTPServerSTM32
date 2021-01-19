@@ -77,9 +77,26 @@ void send_file(struct netconn * conn, struct netconn * data_conn, const char * f
 	static uint8_t buffer[MAX_FRAME_SIZE];
 	UBaseType_t file_size = get_file_size(file);
 	UBaseType_t read_size;
-	read_file(file, buffer, file_size, &read_size);
-	HAL_UART_Transmit_IT(huart, buffer, read_size);
-	netconn_write(data_conn, buffer, read_size, NETCONN_NOCOPY);
+
+
+	FIL file_ptr, fdst;      /* File objects */
+	FRESULT fr;          /* FatFs function common result code */
+	UINT br, bw;         /* File read/write count */
+
+	/* Open source file on the drive 1 */
+	fr = f_open(&file_ptr, file, FA_READ);
+	while (file_size > 0) {
+		if (fr == FR_OK) {
+			UBaseType_t size_to_read = file_size > MAX_FRAME_SIZE ? MAX_FRAME_SIZE : file_size;
+			f_read(&file_ptr, buffer, size_to_read, &read_size);
+			netconn_write(data_conn, buffer, read_size, NETCONN_COPY);
+			file_size -= read_size;
+		}
+
+	}
+	/* Close open files */
+	f_close(&file_ptr);
+
 
 	/* tell that transmission has ended */
 	netconn_write(conn, ftp_message_closing_successful_data_connection, sizeof(ftp_message_closing_successful_data_connection), NETCONN_NOCOPY);

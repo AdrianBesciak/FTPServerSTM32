@@ -13,7 +13,6 @@
 extern char current_directory[];
 
 FRESULT get_files_in_dir(char* path, uint8_t * files_list);
-void read_file(const char * path, uint8_t * buffer, UBaseType_t file_size, UBaseType_t * buff_size);
 UBaseType_t get_file_size(const char * file);
 
 

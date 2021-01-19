@@ -12,7 +12,7 @@
 #define FTP_DATA_PORT 23
 #define DATA_BUF_SIZE 800
 #define MESSAGE_BUF_SIZE 100
-#define MAX_FRAME_SIZE 1500
+#define MAX_FRAME_SIZE 1300
 
 typedef struct ftp_init_arguments {
 	UART_HandleTypeDef * huart;
