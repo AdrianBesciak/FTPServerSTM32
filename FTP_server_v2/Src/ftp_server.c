@@ -39,6 +39,7 @@ const char ftp_message_ascii_mode[] = "200 Switching to ASCII mode.\r\n";
 const char ftp_message_passive_mode[] = "227 Entering Passive Mode (172,16,25,125,0,";
 const char ftp_message_service_tmp_unavailable[] = "421\r\n";
 const char ftp_message_open_data_connection[] = "150 Data transmission has been started.\r\n";
+const char ftp_message_start_listening_on_data_conn[] = "150 OK to send data.\r\n";
 const char ftp_message_closing_successful_data_connection[] = "226 Transfer complete.\r\n";
 const char ftp_message_directory_changed[] = "250 Directory succesfully changed.\r\n";
 const char ftp_message_request_passive_mode[] = "425 Use PASV first.\r\n";
@@ -79,9 +80,8 @@ void send_file(struct netconn * conn, struct netconn * data_conn, const char * f
 	UBaseType_t read_size;
 
 
-	FIL file_ptr, fdst;      /* File objects */
+	FIL file_ptr;      /* File objects */
 	FRESULT fr;          /* FatFs function common result code */
-	UINT br, bw;         /* File read/write count */
 
 	/* Open source file on the drive 1 */
 	fr = f_open(&file_ptr, file, FA_READ);
@@ -94,6 +94,65 @@ void send_file(struct netconn * conn, struct netconn * data_conn, const char * f
 		}
 
 	}
+	/* Close open files */
+	f_close(&file_ptr);
+
+
+	/* tell that transmission has ended */
+	netconn_write(conn, ftp_message_closing_successful_data_connection, sizeof(ftp_message_closing_successful_data_connection), NETCONN_NOCOPY);
+
+
+	return;
+}
+
+void recv_file(struct netconn * conn, struct netconn * data_conn, const char * file) {
+	/* tell that transmission has been started */
+	netconn_write(conn, ftp_message_start_listening_on_data_conn, sizeof(ftp_message_start_listening_on_data_conn), NETCONN_NOCOPY);
+
+	vTaskDelay(50);
+	/*here should be data transmission on data port */
+
+	static uint8_t buffer[MAX_FRAME_SIZE];
+	UBaseType_t written_size;
+
+
+	FIL file_ptr;      /* File object */
+	FRESULT fr;          /* FatFs function common result code */
+
+	/* Open source file on the drive 1 */
+	fr = f_open(&file_ptr, file, FA_WRITE | FA_CREATE_ALWAYS);
+
+	uint8_t transmission_not_finished = 1;
+
+	while (netconn_err(data_conn) == ERR_OK && transmission_not_finished) {
+		struct netbuf * inbuf;
+		err_t recv_err;
+		char * buf;
+		u16_t buflen;
+
+		recv_err = netconn_recv(data_conn, &inbuf);
+		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+		//sprintf(logbuf, "Data recv_err: %i\n\r", recv_err);
+		//HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+
+		if (recv_err == ERR_OK) {
+			if (netconn_err(data_conn) == ERR_OK) {
+				netbuf_data(inbuf, (void**)&buf, &buflen);
+				/*sprintf(logbuf, "Otrzymano %i znakow, wiadomosc: %s\n\r", buflen, buf);
+				HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
+				HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);*/
+				if (fr == FR_OK) {
+					f_write(&file_ptr, buf, buflen, written_size);
+					if (buflen > written_size)
+						break;
+				}
+				netbuf_delete(inbuf);
+			} else {
+				break;
+			}
+		}
+	}
+
 	/* Close open files */
 	f_close(&file_ptr);
 
@@ -258,6 +317,21 @@ static void ftp_server_serve(struct netconn * conn) {
 					}
 					get_filename(buf, filename);
 					send_file(conn, data_conn, filename);
+					netconn_close(data_conn);
+					netconn_close(temp_data_conn);
+					vTaskDelay(100);
+					netconn_delete(data_conn);
+					netconn_delete(temp_data_conn);
+					//data_conn = temp_data_conn = NULL;
+					transmission_not_finished = 0;
+					break;
+				case RECV_FILE:
+					if (data_conn == NULL) {
+						netconn_write(conn, ftp_message_request_passive_mode, sizeof(ftp_message_request_passive_mode), NETCONN_NOCOPY);
+						break;
+					}
+					get_filename(buf, filename);
+					recv_file(conn, data_conn, filename);
 					netconn_close(data_conn);
 					netconn_close(temp_data_conn);
 					vTaskDelay(100);

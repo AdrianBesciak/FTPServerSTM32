@@ -22,6 +22,7 @@ const char * type = "TYPE";
 const char * pasv = "PASV\r\n";
 const char * list = "LIST\r\n";
 const char * retr = "RETR ";
+const char * stor = "STOR ";
 
 
 ftp_request_type get_request_type(const char * request) {
@@ -65,6 +66,9 @@ ftp_request_type get_request_type(const char * request) {
 
 	if (strncmp(request, retr, 4) == 0)
 			return SEND_FILE;
+
+	if (strncmp(request, stor, 4) == 0)
+				return RECV_FILE;
 }
 
 /* assumed that buffer has enough length for user_name */
