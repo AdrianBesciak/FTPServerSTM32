@@ -74,10 +74,16 @@ void send_file(struct netconn * conn, struct netconn * data_conn, const char * f
 	vTaskDelay(50);
 	/*here should be data transmission on data port */
 
-
+	static uint8_t buffer[MAX_FRAME_SIZE];
+	UBaseType_t file_size = get_file_size(file);
+	UBaseType_t read_size;
+	read_file(file, buffer, file_size, &read_size);
+	HAL_UART_Transmit_IT(huart, buffer, read_size);
+	netconn_write(data_conn, buffer, read_size, NETCONN_NOCOPY);
 
 	/* tell that transmission has ended */
 	netconn_write(conn, ftp_message_closing_successful_data_connection, sizeof(ftp_message_closing_successful_data_connection), NETCONN_NOCOPY);
+
 
 	return;
 }
@@ -235,6 +241,13 @@ static void ftp_server_serve(struct netconn * conn) {
 					}
 					get_filename(buf, filename);
 					send_file(conn, data_conn, filename);
+					netconn_close(data_conn);
+					netconn_close(temp_data_conn);
+					vTaskDelay(100);
+					netconn_delete(data_conn);
+					netconn_delete(temp_data_conn);
+					//data_conn = temp_data_conn = NULL;
+					transmission_not_finished = 0;
 					break;
 				default:
 					netconn_write(conn, ftp_message_not_recognized_operation, sizeof(ftp_message_not_recognized_operation), NETCONN_NOCOPY);
