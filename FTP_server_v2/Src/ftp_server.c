@@ -124,7 +124,7 @@ void recv_file(struct netconn * conn, struct netconn * data_conn, const char * f
 
 	uint8_t transmission_not_finished = 1;
 
-	while (netconn_err(data_conn) == ERR_OK && transmission_not_finished) {
+	while (transmission_not_finished) {
 		struct netbuf * inbuf;
 		err_t recv_err;
 		char * buf;
@@ -132,24 +132,19 @@ void recv_file(struct netconn * conn, struct netconn * data_conn, const char * f
 
 		recv_err = netconn_recv(data_conn, &inbuf);
 		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
-		//sprintf(logbuf, "Data recv_err: %i\n\r", recv_err);
-		//HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
 
 		if (recv_err == ERR_OK) {
 			if (netconn_err(data_conn) == ERR_OK) {
 				netbuf_data(inbuf, (void**)&buf, &buflen);
-				/*sprintf(logbuf, "Otrzymano %i znakow, wiadomosc: %s\n\r", buflen, buf);
-				HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-				HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);*/
 				if (fr == FR_OK) {
 					f_write(&file_ptr, buf, buflen, written_size);
-					if (buflen > written_size)
-						break;
 				}
 				netbuf_delete(inbuf);
 			} else {
 				break;
 			}
+		} else {
+			break;
 		}
 	}
 
