@@ -60,12 +60,7 @@
 #include "usbh_platform.h"
 
 #include "ftp_server.h"
-
-//lab2_3
-//#include "dbgu.h"
-//#include "term_io.h"
-//#include "ansi.h"
-
+#include "semphr.h"
 
 /* USER CODE END Includes */
 
@@ -501,94 +496,6 @@ void StartDefaultTask(void const * argument)
 	  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 	  vTaskDelay(100);
   }
-
-  //lab2_3
-
-
-
-
-
-
-/*   int task = 1;
-
-   if(task == 0) {
-	   UINT bw;
-
-	   vTaskDelay(10);
-	   const char * msg = "Write test\n\r";
-	   HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
-
-		const char* text = "Linijka tekstu!\n";
-		const char * msg1 = "f_open...\n\r";
-		HAL_UART_Transmit_IT(&huart3, msg1, strlen(msg1));
-		osDelay(10);
-		res = f_open(&file,"0:/test.txt",FA_WRITE|FA_OPEN_APPEND);
-		// Allocates storage
-		sprintf(logdata, "res=%d\n",res);
-		HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
-
-		osDelay(10);
-		if(res == FR_NOT_ENABLED){
-			const char * msg = "FR_NOT_ENABLED\n\r";
-			HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
-		}
-
-		osDelay(10);
-		if(!res){
-			const char * msg = "f_write...\n\r";
-			HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
-			res = f_write(&file,text,strlen(text),&bw);
-			sprintf(logdata, "res=%d, bw=%d\n\r",res,bw);
-			HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
-			f_close(&file);
-		}
-		else{
-			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-		}
-   }
-
-   if(task == 1){
-	   UINT br;
-
-	   vTaskDelay(10);
-	   const char * msg = "Read test\n\r";
-	   HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
-
-
-	   int btr = 50;
-		char* text = (char)malloc(btr * sizeof(char));
-		const char * msg5 = "f_open...\n\r";
-		HAL_UART_Transmit_IT(&huart3, msg5, strlen(msg5));
-		osDelay(10);
-		res = f_open(&file,"0:/test.txt",FA_READ);
-		// Allocates storage
-		sprintf(logdata, "res=%d\n",res);
-		HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
-
-		osDelay(10);
-		if(res == FR_NOT_ENABLED){
-			const char * msg = "FR_NOT_ENABLED\n\r";
-			HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
-		}
-
-		osDelay(10);
-		if(!res){
-			const char * msg = "f_write...\n\r";
-			HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
-			res = f_read(&file,text,btr,&br);
-			sprintf(logdata, "br=%d, text=%s\n",br, text);
-			HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
-			f_close(&file);
-		}
-		else{
-			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
-		}
-   }*/
-
-
-
 
   /* Infinite loop */
   for(;;)
