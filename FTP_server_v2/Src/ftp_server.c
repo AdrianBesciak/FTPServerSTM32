@@ -44,6 +44,10 @@ const char ftp_message_closing_successful_data_connection[] = "226 Transfer comp
 const char ftp_message_directory_changed[] = "250 Directory succesfully changed.\r\n";
 const char ftp_message_request_passive_mode[] = "425 Use PASV first.\r\n";
 
+void init_ftp_server(SemaphoreHandle_t mutex){
+	mutex_FS = mutex;
+}
+
 uint8_t get_data_port() {
 	static uint8_t port = FTP_DATA_PORT;
 	if ( port == 0 )
@@ -84,18 +88,21 @@ void send_file(struct netconn * conn, struct netconn * data_conn, const char * f
 	FRESULT fr;          /* FatFs function common result code */
 
 	/* Open source file on the drive 1 */
-	fr = f_open(&file_ptr, file, FA_READ);
-	while (file_size > 0) {
-		if (fr == FR_OK) {
-			UBaseType_t size_to_read = file_size > MAX_FRAME_SIZE ? MAX_FRAME_SIZE : file_size;
-			f_read(&file_ptr, buffer, size_to_read, &read_size);
-			netconn_write(data_conn, buffer, read_size, NETCONN_COPY);
-			file_size -= read_size;
-		}
+	if(xSemaphoreTake(mutex_FS, portMAX_DELAY) == pdPASS){
+		fr = f_open(&file_ptr, file, FA_READ);
+		while (file_size > 0) {
+			if (fr == FR_OK) {
+					UBaseType_t size_to_read = file_size > MAX_FRAME_SIZE ? MAX_FRAME_SIZE : file_size;
+					f_read(&file_ptr, buffer, size_to_read, &read_size);
+					netconn_write(data_conn, buffer, read_size, NETCONN_COPY);
+					file_size -= read_size;
+				}
+			}
+		/* Close open files */
+		f_close(&file_ptr);
 
+		xSemaphoreGive(mutex_FS);
 	}
-	/* Close open files */
-	f_close(&file_ptr);
 
 
 	/* tell that transmission has ended */
@@ -124,33 +131,36 @@ void recv_file(struct netconn * conn, struct netconn * data_conn, const char * f
 
 	uint8_t transmission_not_finished = 1;
 
-	while (transmission_not_finished) {
-		struct netbuf * inbuf;
-		err_t recv_err;
-		char * buf;
-		u16_t buflen;
+	if(xSemaphoreTake(mutex_FS, portMAX_DELAY) == pdPASS){
+		while (transmission_not_finished) {
+			struct netbuf * inbuf;
+			err_t recv_err;
+			char * buf;
+			u16_t buflen;
 
-		recv_err = netconn_recv(data_conn, &inbuf);
-		HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+			recv_err = netconn_recv(data_conn, &inbuf);
+			HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
 
-		if (recv_err == ERR_OK) {
-			if (netconn_err(data_conn) == ERR_OK) {
-				netbuf_data(inbuf, (void**)&buf, &buflen);
-				if (fr == FR_OK) {
-					f_write(&file_ptr, buf, buflen, written_size);
+			if (recv_err == ERR_OK) {
+				if (netconn_err(data_conn) == ERR_OK) {
+					netbuf_data(inbuf, (void**)&buf, &buflen);
+					if (fr == FR_OK) {
+						f_write(&file_ptr, buf, buflen, written_size);
+					}
+					netbuf_delete(inbuf);
+				} else {
+					break;
 				}
-				netbuf_delete(inbuf);
 			} else {
 				break;
 			}
-		} else {
-			break;
 		}
+
+		/* Close open files */
+		f_close(&file_ptr);
+
+		xSemaphoreGive(mutex_FS);
 	}
-
-	/* Close open files */
-	f_close(&file_ptr);
-
 
 	/* tell that transmission has ended */
 	netconn_write(conn, ftp_message_closing_successful_data_connection, sizeof(ftp_message_closing_successful_data_connection), NETCONN_NOCOPY);

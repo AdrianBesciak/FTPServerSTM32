@@ -19,8 +19,10 @@ typedef struct ftp_init_arguments {
 	FATFS * fs;
 } ftp_init_arguments;
 
+SemaphoreHandle_t mutex_FS;
+
 void ftp_server_netconn_thread(void const * arguments);
 
-
+void init_ftp_server(SemaphoreHandle_t mutex);
 
 #endif /* FTP_SERVER_H_ */

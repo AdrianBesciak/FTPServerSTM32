@@ -61,6 +61,7 @@
 
 #include "ftp_server.h"
 #include "semphr.h"
+#include "usb_stick_services.h"
 
 /* USER CODE END Includes */
 
@@ -81,6 +82,7 @@ uint8_t Received;
 
 uint32_t last_tick;
 SemaphoreHandle_t sem_EXTI;
+SemaphoreHandle_t mutex_FS;
 
 /* USER CODE END PV */
 
@@ -161,6 +163,12 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
+
+  mutex_FS = xSemaphoreCreateMutex();
+  if(mutex_FS == NULL){
+	  uint16_t size = sprintf(data, "FS mutex didn't initialise properly");
+	  HAL_UART_Transmit_IT(&huart3, data, size);
+  }
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
@@ -442,7 +450,7 @@ void StartDefaultTask(void const * argument)
 
   /* USB stick init section */
 
-  init_usb_stick_services(&huart3);
+  init_usb_stick_services(&huart3, mutex_FS);
 
   MX_DriverVbusFS(0); //wlacza zasilanie urzadzenia USB
   const char* msg = "waiting for USB device...";
@@ -503,31 +511,36 @@ void StartDefaultTask(void const * argument)
 	  vTaskDelay(100);
   }
 
+//  char*
+
   /* Infinite loop */
   for(;;)
   {
 	  if(xSemaphoreTake(sem_EXTI, portMAX_DELAY) == pdPASS){
-		  const char * message = "Button pressed\n\r";
-		  HAL_UART_Transmit_IT(&huart3, message, strlen(message));
 		  FIL fp;
 		  FRESULT fr;
 		  UBaseType_t written_size;
-		  const char * text = "A sample text in file";
-		  sprintf(logdata, "IP address: %s\n\r", ipaddr_ntoa(&(gnetif.ip_addr)));
-		  fr = f_open(&fp, "info.txt", FA_OPEN_APPEND | FA_WRITE);
+		  UBaseType_t number_of_files = 0;
+		  get_number_of_files_in_dir("/", &number_of_files);
 
-		  if(fr == FR_OK){
-			  f_write(&fp, logdata, strlen(logdata), &written_size);
-			  sprintf(logdata, "Written %d bytes\n\r", written_size);
-			  HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
+		  sprintf(logdata, "IP address: %s, files in the main directory: %d\n\r", ipaddr_ntoa(&(gnetif.ip_addr)), number_of_files);
+		  if(xSemaphoreTake(mutex_FS, portMAX_DELAY) == pdPASS){
+			  fr = f_open(&fp, "info.txt", FA_OPEN_APPEND | FA_WRITE);
+
+			  if(fr == FR_OK){
+				  f_write(&fp, logdata, strlen(logdata), &written_size);
+				  sprintf(logdata, "Written %d bytes\n\r", written_size);
+				  HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
+			  }
+			  else{
+				  const char * message = "Couldn't open file\n\r";
+				  HAL_UART_Transmit_IT(&huart3, message, strlen(message));
+			  }
+
+			  f_close(&fp);
+
+			  xSemaphoreGive(mutex_FS);
 		  }
-		  else{
-			  const char * message = "Couldn't open file\n\r";
-			  HAL_UART_Transmit_IT(&huart3, message, strlen(message));
-		  }
-
-		  f_close(&fp);
-
 
 	  }
 
