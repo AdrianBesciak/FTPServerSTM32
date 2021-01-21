@@ -72,16 +72,15 @@ UART_HandleTypeDef huart3;
 
 osThreadId defaultTaskHandle;
 
-uint32_t last_tick;
-
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
-//Usb status
 extern ApplicationTypeDef Appli_state;
-
 char* logdata;
 uint8_t Received;
+
+uint32_t last_tick;
+SemaphoreHandle_t sem_EXTI;
 
 /* USER CODE END PV */
 
@@ -166,6 +165,11 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
+  sem_EXTI = xSemaphoreCreateBinary();
+  if(sem_EXTI == NULL){
+	  uint16_t size = sprintf(data, "Semaphore didn't initialise properly");
+	  HAL_UART_Transmit_IT(&huart3, data, size);
+  }
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
@@ -383,11 +387,13 @@ static void MX_GPIO_Init(void)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	uint32_t cur_tick = HAL_GetTick();
-	if(cur_tick - last_tick > 500){
+	if(cur_tick - last_tick > 250){
 		last_tick = cur_tick;
 		if(GPIO_Pin == GPIO_PIN_13){
-			const char * message = "Pressed button\n\r";
-			//HAL_UART_Transmit_IT(&huart3, message, strlen(message));
+//			const char * message = "Pressed button\n\r";
+//			HAL_UART_Transmit_IT(&huart3, message, strlen(message));
+			BaseType_t semaphoreStatus, pxHigherPriorityTaskWoken;
+			semaphoreStatus = xSemaphoreGiveFromISR(sem_EXTI, &pxHigherPriorityTaskWoken);
 		}
 	}
 
@@ -500,7 +506,14 @@ void StartDefaultTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(100);
+	  if(xSemaphoreTake(sem_EXTI, portMAX_DELAY) == pdPASS){
+		  const char * message = "Pressed button\n\r";
+		  HAL_UART_Transmit_IT(&huart3, message, strlen(message));
+//		  FIL fp;
+//		  FRESULT fr;
+//		  fr = f_open(fp, "info.txt", FA_CREATE_ALWAYS);
+
+	  }
 
   }
   /* USER CODE END 5 */ 
