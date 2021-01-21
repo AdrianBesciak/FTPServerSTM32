@@ -507,11 +507,27 @@ void StartDefaultTask(void const * argument)
   for(;;)
   {
 	  if(xSemaphoreTake(sem_EXTI, portMAX_DELAY) == pdPASS){
-		  const char * message = "Pressed button\n\r";
+		  const char * message = "Button pressed\n\r";
 		  HAL_UART_Transmit_IT(&huart3, message, strlen(message));
-//		  FIL fp;
-//		  FRESULT fr;
-//		  fr = f_open(fp, "info.txt", FA_CREATE_ALWAYS);
+		  FIL fp;
+		  FRESULT fr;
+		  UBaseType_t written_size;
+		  const char * text = "A sample text in file";
+		  sprintf(logdata, "IP address: %s\n\r", ipaddr_ntoa(&(gnetif.ip_addr)));
+		  fr = f_open(&fp, "info.txt", FA_OPEN_APPEND | FA_WRITE);
+
+		  if(fr == FR_OK){
+			  f_write(&fp, logdata, strlen(logdata), &written_size);
+			  sprintf(logdata, "Written %d bytes\n\r", written_size);
+			  HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
+		  }
+		  else{
+			  const char * message = "Couldn't open file\n\r";
+			  HAL_UART_Transmit_IT(&huart3, message, strlen(message));
+		  }
+
+		  f_close(&fp);
+
 
 	  }
 
