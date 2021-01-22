@@ -407,31 +407,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 
 }
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-
-	uint8_t Data[50]; // Tablica przechowujaca wysylana wiadomosc.
-	uint16_t size = 0; // Rozmiar wysylanej wiadomosci
-
-	// Odebrany znak zostaje przekonwertowany na liczbe calkowita i sprawdzony
-	// instrukcja warunkowa
-	switch (atoi(&Received)) {
-		case 0: // Jezeli odebrany zostanie znak 0
-			size = sprintf(Data, "STOP\n\r");
-			break;
-
-		case 1: // Jezeli odebrany zostanie znak 1
-			size = sprintf(Data, "START\n\r");
-			break;
-
-		default: // Jezeli odebrano nieobslugiwany znak
-			size = sprintf(Data, "Odebrano nieznany znak: %c\n\r", Received);
-			break;
-	}
-
-	HAL_UART_Transmit_IT(&huart3, Data, size); // Rozpoczecie nadawania danych z wykorzystaniem przerwan
-	HAL_UART_Receive_IT(&huart3, &Received, 1); // Ponowne włączenie nasłuchiwania
-}
-
 /* USER CODE END 4 */
 
 /* StartDefaultTask function */
