@@ -114,3 +114,16 @@ UBaseType_t get_number_of_files_in_dir(char* path, UBaseType_t* nof){
 	}
 	return res;
 }
+
+void delete_file(const char * path) {
+	FRESULT res;
+	DIR dir;
+	static FILINFO fno;
+
+
+	if(xSemaphoreTake(mutex_FS, portMAX_DELAY) == pdPASS){
+		f_unlink(path);
+		xSemaphoreGive(mutex_FS);
+	}
+	return res;
+}

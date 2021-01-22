@@ -23,6 +23,7 @@ typedef enum ftp_request_type {
 	LIST = 11,
 	SEND_FILE = 12,
 	RECV_FILE = 13,
+	DELETE_FILE = 14,
 	NOT_SUPPORTED = 100
 } ftp_request_type;
 

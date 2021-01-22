@@ -42,6 +42,7 @@ const char ftp_message_open_data_connection[] = "150 Data transmission has been 
 const char ftp_message_start_listening_on_data_conn[] = "150 OK to send data.\r\n";
 const char ftp_message_closing_successful_data_connection[] = "226 Transfer complete.\r\n";
 const char ftp_message_directory_changed[] = "250 Directory succesfully changed.\r\n";
+const char ftp_message_delete_file_success[] = "250 Delete operation succesful.\r\n";
 const char ftp_message_request_passive_mode[] = "425 Use PASV first.\r\n";
 
 void init_ftp_server(SemaphoreHandle_t mutex){
@@ -344,6 +345,11 @@ static void ftp_server_serve(struct netconn * conn) {
 					netconn_delete(temp_data_conn);
 					//data_conn = temp_data_conn = NULL;
 					transmission_not_finished = 0;
+					break;
+				case DELETE_FILE:
+					get_filename(buf, filename);
+					delete_file(filename);
+					netconn_write(conn, ftp_message_delete_file_success, sizeof(ftp_message_delete_file_success), NETCONN_NOCOPY);
 					break;
 				default:
 					netconn_write(conn, ftp_message_not_recognized_operation, sizeof(ftp_message_not_recognized_operation), NETCONN_NOCOPY);
