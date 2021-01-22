@@ -534,13 +534,7 @@ void StartDefaultTask(void const * argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-  if (htim->Instance == TIM10) {
-	static uint16_t cnt = 0;
-	char data[50];
-	sprintf(data, "Log: %d.\n\r", cnt);
-	HAL_UART_Transmit_IT(&huart3, data, strlen(data));
-	cnt++;
-  }
+
 
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM6) {
