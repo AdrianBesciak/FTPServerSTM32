@@ -99,8 +99,11 @@ void send_file(struct netconn * conn, struct netconn * data_conn, const char * f
 					file_size -= read_size;
 				}
 			}
+
 		/* Close open files */
-		f_close(&file_ptr);
+		if (fr == FR_OK) {
+			f_close(&file_ptr);
+		}
 
 		xSemaphoreGive(mutex_FS);
 	}
@@ -127,12 +130,12 @@ void recv_file(struct netconn * conn, struct netconn * data_conn, const char * f
 	FIL file_ptr;      /* File object */
 	FRESULT fr;          /* FatFs function common result code */
 
-	/* Open source file on the drive 1 */
-	fr = f_open(&file_ptr, file, FA_WRITE | FA_CREATE_ALWAYS);
-
 	uint8_t transmission_not_finished = 1;
 
 	if(xSemaphoreTake(mutex_FS, portMAX_DELAY) == pdPASS){
+		/* Open source file on the drive 1 */
+		fr = f_open(&file_ptr, file, FA_WRITE | FA_CREATE_ALWAYS);
+
 		while (transmission_not_finished) {
 			struct netbuf * inbuf;
 			err_t recv_err;
@@ -158,7 +161,9 @@ void recv_file(struct netconn * conn, struct netconn * data_conn, const char * f
 		}
 
 		/* Close open files */
-		f_close(&file_ptr);
+		if (fr == FR_OK) {
+			f_close(&file_ptr);
+		}
 
 		xSemaphoreGive(mutex_FS);
 	}

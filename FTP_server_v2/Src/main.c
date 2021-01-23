@@ -426,6 +426,7 @@ void StartDefaultTask(void const * argument)
   /* USB stick init section */
 
   init_usb_stick_services(&huart3, mutex_FS);
+  init_ftp_server(mutex_FS);
 
   MX_DriverVbusFS(0); //wlacza zasilanie urzadzenia USB
   const char* msg = "waiting for USB device...";
