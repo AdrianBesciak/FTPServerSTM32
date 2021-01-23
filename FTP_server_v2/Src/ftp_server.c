@@ -221,9 +221,6 @@ static void ftp_server_serve(struct netconn * conn) {
 		if (recv_err == ERR_OK) {
 			if (netconn_err(conn) == ERR_OK) {
 				netbuf_data(inbuf, (void**)&buf, &buflen);
-				/*sprintf(logbuf, "Otrzymano %i znakow, wiadomosc: %s\n\r", buflen, buf);
-				HAL_UART_Transmit_IT(huart, logbuf, strlen(logbuf));
-				HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);*/
 
 				switch(get_request_type(buf)) {
 				case AUTH_TLS:
@@ -272,7 +269,7 @@ static void ftp_server_serve(struct netconn * conn) {
 					break;
 				case ASCII_MODE:
 					// TODO
-					//not implemented yet,  and not important as long as with this serwer communicates only with windows machines
+					//not implemented yet,  and not important as long as with this server communicates only with windows machines
 					netconn_write(conn, ftp_message_ascii_mode, sizeof(ftp_message_ascii_mode), NETCONN_NOCOPY);
 					break;
 				case PASSIVE_MODE:

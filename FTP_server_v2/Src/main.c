@@ -148,15 +148,11 @@ int main(void)
   MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
 
-  uint8_t data[50];
-  uint16_t size = sprintf(data, "Zainicjowane peryferia\n\r");
-  HAL_UART_Transmit_IT(&huart3, data, size);
-
   HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
 
-  HAL_UART_Receive_IT(&huart3, &Received, 1);
+//  HAL_UART_Receive_IT(&huart3, &Received, 1);
   //HAL_TIM_Base_Start_IT(&htim10);
 
   /* USER CODE END 2 */
@@ -428,8 +424,6 @@ void StartDefaultTask(void const * argument)
 
   do{
 	  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
-	  const char * dot = ".";
-	  HAL_UART_Transmit_IT(&huart3, dot, strlen(dot));
 	  vTaskDelay(100);
   }while(Appli_state != APPLICATION_READY);
 
@@ -445,8 +439,6 @@ void StartDefaultTask(void const * argument)
   do
   {
 	  HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-	  sprintf(logdata, "dhcp->state = %02X\n\r",dhcp->state);
-	  HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
 	  vTaskDelay(250);
   }while(dhcp->state != 0x0A);
   vTaskDelay(200);
