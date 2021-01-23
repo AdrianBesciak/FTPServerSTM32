@@ -22,6 +22,4 @@ void delete_file(const char * path);
 void init_usb_stick_services(UART_HandleTypeDef * recv_huart, SemaphoreHandle_t mutex);
 
 
-
-
 #endif /* USB_STICK_SERVICES_H_ */

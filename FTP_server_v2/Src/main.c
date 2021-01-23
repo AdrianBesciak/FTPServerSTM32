@@ -165,18 +165,18 @@ int main(void)
   /* add mutexes, ... */
 
   mutex_FS = xSemaphoreCreateMutex();
-  if(mutex_FS == NULL){
-	  uint16_t size = sprintf(data, "FS mutex didn't initialise properly");
-	  HAL_UART_Transmit_IT(&huart3, data, size);
+  while(mutex_FS == NULL){
+	  HAL_Delay(1000);
+	  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
   }
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
   sem_EXTI = xSemaphoreCreateBinary();
-  if(sem_EXTI == NULL){
-	  uint16_t size = sprintf(data, "Semaphore didn't initialise properly");
-	  HAL_UART_Transmit_IT(&huart3, data, size);
+  while(sem_EXTI == NULL){
+	  HAL_Delay(1000);
+	  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
   }
   /* USER CODE END RTOS_SEMAPHORES */
 
@@ -211,8 +211,6 @@ int main(void)
 	  HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 	  uint8_t data[50];
 	  static uint8_t cnt = 0;
-	  uint16_t size = sprintf(data, "main while(1) - iteracja %i\n\r", ++cnt);
-	  HAL_UART_Transmit_IT(&huart3, data, size);
 
   /* USER CODE END WHILE */
 
@@ -398,8 +396,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	if(cur_tick - last_tick > 250){
 		last_tick = cur_tick;
 		if(GPIO_Pin == GPIO_PIN_13){
-//			const char * message = "Pressed button\n\r";
-//			HAL_UART_Transmit_IT(&huart3, message, strlen(message));
 			BaseType_t semaphoreStatus, pxHigherPriorityTaskWoken;
 			semaphoreStatus = xSemaphoreGiveFromISR(sem_EXTI, &pxHigherPriorityTaskWoken);
 		}
@@ -429,8 +425,6 @@ void StartDefaultTask(void const * argument)
   init_ftp_server(mutex_FS);
 
   MX_DriverVbusFS(0); //wlacza zasilanie urzadzenia USB
-  const char* msg = "waiting for USB device...";
-  HAL_UART_Transmit_IT(&huart3, msg, strlen(msg));
 
   do{
 	  HAL_GPIO_TogglePin(LD1_GPIO_Port, LD1_Pin);
@@ -439,30 +433,14 @@ void StartDefaultTask(void const * argument)
 	  vTaskDelay(100);
   }while(Appli_state != APPLICATION_READY);
 
-  const char * message = "\n\rUSB device ready!\n\r";
-  HAL_UART_Transmit_IT(&huart3, message, strlen(message));
-
   FATFS *fs;     /* Ponter to the filesystem object */
   fs = malloc(sizeof (FATFS));           /* Get work area for the volume */
   FRESULT res = f_mount(fs, "", 0);                    /* Mount the default drive */
 
- /* char buff[256];
-  if (res == FR_OK) {
-	  strcpy(buff, "/");
-	  res = scan_files(buff);
-  }
-
-  vTaskDelay(1000);
-  sprintf(logdata, "USB_Stick root_dir %lu\r\n", fs->dirbase);
-  vTaskDelay(1000);*/
-
   HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
 
 
-
   /* DHCP and FTP init section */
-  sprintf(logdata, "Obtaining address with DHCP...\n\r");
-  HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
   struct dhcp *dhcp = netif_dhcp_data(&gnetif);
   do
   {
@@ -472,8 +450,6 @@ void StartDefaultTask(void const * argument)
 	  vTaskDelay(250);
   }while(dhcp->state != 0x0A);
   vTaskDelay(200);
-  sprintf(logdata, "DHCP bound with address %s\n\r", ipaddr_ntoa(&(gnetif.ip_addr)));
-  HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
   osThreadDef(ftp_thread, ftp_server_netconn_thread, osPriorityNormal, 1, 4096);
@@ -487,7 +463,6 @@ void StartDefaultTask(void const * argument)
 	  vTaskDelay(100);
   }
 
-//  char*
 
   /* Infinite loop */
   for(;;)
@@ -502,24 +477,13 @@ void StartDefaultTask(void const * argument)
 		  sprintf(logdata, "IP address: %s, files in the main directory: %d\n\r", ipaddr_ntoa(&(gnetif.ip_addr)), number_of_files);
 		  if(xSemaphoreTake(mutex_FS, portMAX_DELAY) == pdPASS){
 			  fr = f_open(&fp, "info.txt", FA_OPEN_APPEND | FA_WRITE);
-
 			  if(fr == FR_OK){
 				  f_write(&fp, logdata, strlen(logdata), &written_size);
-				  sprintf(logdata, "Written %d bytes\n\r", written_size);
-				  HAL_UART_Transmit_IT(&huart3, logdata, strlen(logdata));
 			  }
-			  else{
-				  const char * message = "Couldn't open file\n\r";
-				  HAL_UART_Transmit_IT(&huart3, message, strlen(message));
-			  }
-
 			  f_close(&fp);
-
 			  xSemaphoreGive(mutex_FS);
 		  }
-
 	  }
-
   }
   /* USER CODE END 5 */ 
 }

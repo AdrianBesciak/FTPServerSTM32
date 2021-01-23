@@ -60,7 +60,6 @@ void process_list_command(struct netconn * conn, struct netconn * data_conn) {
 	/* tell that transmission has been started */
 	netconn_write(conn, ftp_message_open_data_connection, sizeof(ftp_message_open_data_connection), NETCONN_NOCOPY);
 
-	vTaskDelay(50);
 	static uint8_t data_buf[DATA_BUF_SIZE];
 
 	get_files_in_dir(current_directory, data_buf);
@@ -83,7 +82,6 @@ void send_file(struct netconn * conn, struct netconn * data_conn, const char * f
 	static uint8_t buffer[MAX_FRAME_SIZE];
 	UBaseType_t file_size = get_file_size(file);
 	UBaseType_t read_size;
-
 
 	FIL file_ptr;      /* File objects */
 	FRESULT fr;          /* FatFs function common result code */
